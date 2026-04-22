@@ -1,0 +1,68 @@
+---
+title: "Cluster access guide"
+description: "How to request Empire AI access, onboard through ColdFront, move data, and submit jobs."
+---
+
+<Info>
+  **Prerequisites:**
+  - You have a project that needs consortium-scale AI or HPC resources.
+  - A PI is prepared to sponsor the request.
+  - You know whether the workload is GPU-heavy, CPU-heavy, or storage-intensive.
+</Info>
+
+<Warning>
+  The Alpha environment is explicitly described as **not HIPAA-compliant** and **not NIST 800-171 compliant**. Do not use it for regulated or sensitive datasets unless Empire AI has provided a later, explicitly compliant workflow for that workload.
+</Warning>
+
+Use the process below to move from proposal to active use.
+
+<Steps>
+  <Step title="Submit a Work Order Request">
+    Start with the institutional Work Order Request (WOR) process. The PI should describe the project, explain the public-interest or research value, justify the hardware needs, and request the expected compute and storage footprint.
+  </Step>
+  <Step title="Complete institutional review">
+    Empire AI access is routed through consortium governance, not simple self-signup. Your home institution typically reviews the request first, then forwards approved work into the shared Empire AI process.
+  </Step>
+  <Step title="Create or activate your CCR ColdFront access">
+    Once the request is approved, account creation and allocation management flow through the University at Buffalo Center for Computational Research (CCR) ColdFront portal. This is where approved users receive the allocation context needed to begin using the environment.
+  </Step>
+  <Step title="Move data into the environment">
+    Use high-volume data transfer tools for large datasets. The materials you provided call out Globus as the preferred bulk-transfer path, including the Empire AI Alpha endpoint. Smaller transfers can use SFTP through tools such as FileZilla or CyberDuck.
+  </Step>
+  <Step title="Choose the right Slurm partition">
+    Submit GPU-centric AI jobs to the `suny` partition. Submit CPU-bound data processing jobs to the `cpu` partition. Keep requests tightly scoped to the actual workload so that queue usage and SU consumption stay reasonable.
+  </Step>
+  <Step title="Run and monitor jobs">
+    Use standard Slurm tooling to submit and inspect work. If you need a refresher on script shape, queue monitoring, or job cancellation, see [Job submission](/job-submission), which covers the local HPCC Slurm workflow in detail.
+  </Step>
+</Steps>
+
+## Minimal job skeleton
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=empire-ai-job
+#SBATCH --partition=suny
+#SBATCH --gres=gpu:1
+#SBATCH --time=02:00:00
+
+module purge
+module load <required_modules>
+
+srun ./your_program
+```
+
+For CPU-only work, switch to the `cpu` partition and remove the GPU request.
+
+## Data transfer notes
+
+- Use Globus for large datasets and repeated transfers.
+- Use SFTP for smaller ad hoc uploads.
+- Plan storage consumption up front, because persistent storage accrues SU cost.
+- If a dataset exceeds 100 TB, expect an additional administrative review path.
+
+## Related pages
+
+- [Service units (SUs) economics](/empire-ai/service-units)
+- [Hardware specifications](/empire-ai/hardware-specifications)
+- [Storage & quotas](/storage)

@@ -1,0 +1,53 @@
+---
+title: "Hardware specifications"
+description: "Alpha and Beta architecture, Blackwell systems, interconnect fabric, and storage design."
+---
+
+Empire AI is being built as a phased AI supercomputing environment centered on accelerated training, inference, and data-intensive research.
+
+## Alpha system
+
+Alpha is the first production-facing phase of the platform. The source materials describe Alpha in two ways:
+
+- Public launch materials describe the initial October 2024 system as a first-stage cluster built around 96 top-tier processors.
+- The planning brief for this documentation project describes the expanded Alpha environment as a 144-H100 system used for pilot workflows and cluster stress-testing.
+
+Taken together, the practical picture is that Alpha is the early adopter environment researchers use to validate software stacks, data paths, and job patterns before the full Beta-scale system is online.
+
+<Warning>
+  Alpha is an early-access research environment, not the final target architecture. It is useful for onboarding and experimentation, but the larger Blackwell-based Beta platform is where the consortium's long-term AI scale begins.
+</Warning>
+
+## Beta system
+
+Beta is the major architecture jump. According to the planning materials, it is funded in part by a $40 million Empire State Development tranche and is engineered to be roughly 11 times more powerful than Alpha, with about 40 times the inference throughput and 8 times the storage footprint.
+
+<Tip>
+  Beta uses an NVIDIA DGX SuperPOD built on DGX GB200 systems. That matters because it combines Blackwell GPUs, Grace CPUs, high-bandwidth memory, and a unified NVLink fabric in a design aimed at very large distributed AI workloads.
+</Tip>
+
+## Beta architecture details
+
+| Component | Specification |
+| --- | --- |
+| GPU architecture | 288 NVIDIA Blackwell GPUs |
+| CPU nodes | 60 nodes with NVIDIA Grace CPU Superchips |
+| Blackwell transistor count | 208 billion transistors per GPU |
+| Process technology | TSMC 4NP |
+| Superchip design | 2 Blackwell GPUs plus 1 Grace-72 core CPU per GB200 Superchip |
+| Interconnect | NVLink unified fabric |
+| Rack-scale bandwidth | Up to 130 TB/s across a single NVL72 rack |
+| Rack-scale AI performance | Up to 1.44 exaFLOPS at FP4 precision |
+| Storage tier 1 | 20+ PB on the VAST Data AI Operating System |
+| Storage tier 2 | 10+ PB on DDN's data intelligence platform |
+| Operations software | NVIDIA AI Enterprise and NVIDIA Mission Control |
+
+## Why the Blackwell stack matters
+
+The key design choice is not just "more GPUs." Beta is tuned for modern large-model workflows:
+
+- FP4 support and the Transformer Engine make it easier to run very large model training and inference efficiently.
+- High-bandwidth NVLink reduces the communication penalty that often slows distributed GPU jobs.
+- Grace CPUs and large storage tiers support the data movement and preprocessing that AI pipelines depend on.
+
+In practical terms, Beta is meant to support workloads that would be difficult or cost-prohibitive on standard institutional clusters: very large multimodal models, long-context training jobs, large-scale simulation-assisted AI, and high-resolution medical or climate datasets.

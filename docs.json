@@ -4,15 +4,15 @@
   "name": "CSI HPCC Documentation",
   "description": "Documentation and educational guide for the College of Staten Island High Performance Computing Center (CSI HPCC) — clusters, SLURM, storage, tutorials, policies, and support.",
   "colors": {
-    "primary": "#1E3A8A",
-    "light": "#3B82F6",
-    "dark": "#1E40AF"
+    "primary": "#7abde8",
+    "light": "#7abde8",
+    "dark": "#7abde8"
   },
   "favicon": "/favicon.svg",
   "navigation": {
     "tabs": [
       {
-        "tab": "Documentation",
+        "tab": "CSI HPCC",
         "groups": [
           {
             "group": "Getting started",
@@ -46,6 +46,41 @@
               "pricing-tiers",
               "faqs",
               "changelog"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Empire AI",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "empire-ai/index",
+              "empire-ai/mission-vision",
+              "empire-ai/governance"
+            ]
+          },
+          {
+            "group": "Infrastructure",
+            "pages": [
+              "empire-ai/deployment-timeline",
+              "empire-ai/hardware-specifications",
+              "empire-ai/thermal-decarbonization"
+            ]
+          },
+          {
+            "group": "Access & allocation",
+            "pages": [
+              "empire-ai/service-units",
+              "empire-ai/cluster-access-guide"
+            ]
+          },
+          {
+            "group": "Research & workforce",
+            "pages": [
+              "empire-ai/active-projects",
+              "empire-ai/workforce-development"
             ]
           }
         ]

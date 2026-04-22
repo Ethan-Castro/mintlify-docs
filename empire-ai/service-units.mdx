@@ -1,0 +1,59 @@
+---
+title: "Service units (SUs) economics"
+description: "How Empire AI prices compute, storage, and queue priority to keep access equitable."
+---
+
+Empire AI uses Service Units (SUs) as an internal accounting model for compute and storage. The goal is not only billing. It is also governance. A shared SU framework lets the consortium compare different hardware tiers and prevent well-funded groups from consuming a disproportionate share of the resource.
+
+## Base rates
+
+| Resource | SU rate |
+| --- | --- |
+| 1 hour of Alpha H100 GPU time | 1.0 SU |
+| 1 hour of Beta B200 / Blackwell GPU time | 2.0 SU |
+| 1 hour of Grace CPU node time | 0.5 SU |
+| Persistent storage | 8.333 SU per TB per month |
+
+Persistent storage rates apply up to 100 TB. The planning materials indicate that storage above 100 TB can be provisioned without the standard rate, but only through separate administrative review and allocation approval.
+
+## Cost formula
+
+Empire AI calculates job cost using a simple model:
+
+```text
+Cost in SUs = job duration x hardware quantity x multiplier
+```
+
+That multiplier changes based on scheduling policy.
+
+## Queue multipliers
+
+| Queue model | Multiplier |
+| --- | --- |
+| Priority queue | 2.0x |
+| Shared resource queue | 0.5x |
+
+This pricing model nudges researchers to reserve expensive priority access for jobs that truly need it while rewarding teams that can tolerate more flexible scheduling.
+
+<Tip>
+  The SU model is a fairness mechanism as much as a budget mechanism. It normalizes access across mixed hardware generations and encourages researchers to choose the smallest reasonable footprint for a workload.
+</Tip>
+
+## Institutional underwriting
+
+The SU ledger is shared, but the way those SUs are funded can vary by institution. The materials you provided use Cornell as an example:
+
+- Cornell subsidizes SU usage through the Provost's office until November 2026.
+- After that date, 1 SU carries an internal chargeback rate of $0.50.
+
+That internal rate is still intended to remain well below commercial cloud pricing for equivalent advanced AI capacity.
+
+## Why this matters to researchers
+
+If you are planning work on Empire AI, the SU framework shapes three practical decisions:
+
+- which hardware tier you request
+- how much queue priority you actually need
+- how long you retain large datasets
+
+For users coming from a local HPC environment, the model is familiar in spirit even if the units are different: efficient jobs, right-sized allocations, and disciplined storage management all translate directly into better access for the whole consortium.
