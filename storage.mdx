@@ -1,0 +1,97 @@
+---
+title: "Storage & quotas"
+description: "Home vs. scratch, quota limits, purge policy, and how to transfer data in and out."
+---
+
+HPCC storage is split across a small, durable **home** filesystem and a large, ephemeral **scratch** filesystem. Use them for different things.
+
+## Where things go
+
+| Path | Purpose | Quota (default) | Backed up? | Persistence |
+| --- | --- | --- | --- | --- |
+| `/global/u/<username>` | **Home.** Source code, scripts, notes, results worth keeping. | 50 GB / 10,000 files | Yes (tape) | Long-term |
+| `/scratch/<username>` | **Scratch.** Working area for running jobs. | Large, shared | No | **Temporary** |
+| `/cunyZone/home/<project>` | **Project space** for group work. | Allocated per project | Depends on project | Allocated per project |
+
+<Warning>
+  **Jobs must run out of `/scratch/<username>`.** Launching jobs from `/global/u/<username>` is not supported. Scratch is also subject to purge: files may be deleted when the filesystem exceeds about 70% full **or** are older than roughly two weeks. Copy anything you want to keep back to your home directory before scratch sweeps it away.
+</Warning>
+
+## Checking your usage
+
+```bash
+df -h ~                  # home
+df -h /scratch/$USER     # scratch
+du -sh ~/*               # what's eating your home quota
+```
+
+Class accounts are typically capped at 10 GB. If you need more space — research account or class — email the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu) with a short justification; PIs should make the request for research quota increases.
+
+## Transferring files in and out
+
+Three mechanisms are supported:
+
+<CardGroup cols={3}>
+  <Card title="Globus" icon="arrow-up-from-bracket">
+    Preferred for **large** transfers. Auto-tuning, parallel streams, fault recovery.
+  </Card>
+  <Card title="SFTP / SCP" icon="terminal">
+    Quick and familiar. Best for small-to-medium files.
+  </Card>
+  <Card title="iRODS" icon="database">
+    For projects that are already on an iRODS grid.
+  </Card>
+</CardGroup>
+
+### Globus (recommended for large data)
+
+Typical throughput is 100–400 Mbps per transfer.
+
+1. Create a free Globus account at [globus.org](https://www.globus.org/).
+2. Add the CUNY HPCC endpoint **`cunyhpc#cea`** as the source or destination.
+3. Use the other endpoint (your laptop via Globus Connect Personal, or XSEDE/ACCESS, etc.) as the matching end of the transfer.
+
+### SFTP / SCP
+
+Transfer directly to **`cea.csi.cuny.edu`**, the HPCC data transfer node:
+
+```bash
+scp ./dataset.tar.gz <your_username>@cea.csi.cuny.edu:/global/u/<your_username>/
+```
+
+Each cluster is mounted under `cea` under its own name, so you can drop files onto a specific server's scratch:
+
+```bash
+sftp <your_username>@cea.csi.cuny.edu
+sftp> put TEST.txt /penzias/scratch/<your_username>/TEST.txt
+```
+
+To reach Arrow without a direct SSH route, use SFTP with a jump through Chizen:
+
+```bash
+sftp -J <your_username>@chizen.csi.cuny.edu <your_username>@arrow:/scratch/<your_username>
+```
+
+### iRODS
+
+iRODS is supported for projects already using an iRODS grid. Contact the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu) to be bootstrapped onto the correct zone.
+
+## Backup and retention
+
+- **Home** is backed up to tape. Restoration is possible — contact the helpline if you need it.
+- **Scratch is not backed up.** Treat it as working space that may vanish. Every job script should end by copying keepers back to home, or to an archive tier such as project space.
+
+## Data handling
+
+If you work with regulated data (HIPAA, FERPA, IRB-protected human subjects data, export-controlled, etc.), **don't** place it on the cluster without first confirming with HPCC staff and your IRB/compliance officer. Not every partition is configured for sensitive workloads.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Job submission" icon="play" href="/job-submission">
+    Templates that already `cd $SLURM_SUBMIT_DIR` under `/scratch`.
+  </Card>
+  <Card title="Policies" icon="shield-halved" href="/policies">
+    Rules around account sharing, login-node activity, and acceptable use.
+  </Card>
+</CardGroup>

@@ -1,0 +1,163 @@
+---
+title: "Accounts & access"
+description: "Who can get an account, how to request one, and how to log in."
+---
+
+## Who can get an account
+
+CSI HPCC operates on a **cost-recovery model**, so every account must be linked to a research project or a class. There are seven account types:
+
+| Type | Who | Renewal cycle |
+| --- | --- | --- |
+| **A** | Faculty / research staff | Yearly (start of Fall semester) |
+| **B** | Adjunct faculty | Every semester (Fall / Spring) |
+| **C** | Doctoral graduate students | Yearly (Fall); up to 14 semesters |
+| **D** | Master's students | Every semester; up to 8 semesters |
+| **E** | Undergraduate students (class only) | Every semester; up to 8 semesters |
+| **F** | Academic collaborators (non-CUNY) | Yearly, for the duration of a project |
+| **G** | Public / private sector partners | No renewal; tied to contract length |
+
+<Note>
+  A **PI (Principal Investigator)** at CUNY is the lead researcher responsible for a project's design, execution, and financial management. Only full-time faculty or qualified researchers can be PIs. Student (C–E) accounts must be attached to a PI-led project; undergraduate research accounts require a faculty sponsor.
+</Note>
+
+## How the registration flow works
+
+HPCC uses a PI-driven registration system:
+
+<Steps>
+  <Step title="PI creates a sponsor account">
+    The faculty member fills out form **A** or **B** with project title, funding, and duration.
+  </Step>
+  <Step title="PI receives a unique project code">
+    HPCC issues a code that the PI shares with group members.
+  </Step>
+  <Step title="Group members apply using the code">
+    Students, postdocs, and collaborators use forms **C, D, E, or F** and include the PI's code.
+  </Step>
+  <Step title="PI assigns members to the project">
+    Once accounts are created, the PI adds them to the correct project in the HPCC portal.
+  </Step>
+</Steps>
+
+## Request an account
+
+Email **[HPCHelp@csi.cuny.edu](mailto:HPCHelp@csi.cuny.edu?subject=CSI%20HPCC%20account%20request)** — or register directly at the [HPCC web portal](https://hpchelp.csi.cuny.edu) — with the details below. **Use a valid CUNY email only** (Gmail, Hotmail, and other public mailers are filtered out).
+
+<CardGroup cols={2}>
+  <Card title="Identity" icon="id-card">
+    Full name as on your CUNY ID, CUNY EID, institutional email, and academic status.
+  </Card>
+  <Card title="Affiliation" icon="building-columns">
+    Primary CUNY campus and department. Secondary affiliation (e.g. Graduate Center) if any.
+  </Card>
+  <Card title="PI / sponsor" icon="user-tie">
+    Name, department, and college of your PI — plus the **project code** they received.
+  </Card>
+  <Card title="Project" icon="flask">
+    Title, short description (up to 100 words), funding source, and relevant publications.
+  </Card>
+  <Card title="Resources" icon="microchip">
+    CPU cores, GPU type and count (V100/16, V100/32, L40/48, A30/24, A40/24, A100/40, A100/80), storage, backup, archive.
+  </Card>
+  <Card title="Local resources" icon="server">
+    What computing resources (if any) you already have access to at your home campus.
+  </Card>
+</CardGroup>
+
+Once approved you'll receive a username and a temporary password to reset on first login. PhD students should list their GC email first, then the college email. Master's and undergraduate students list their college email.
+
+<Note>
+  **Class accounts (type E)** are for coursework only and are capped at **10 GB**. They are deleted 30 days after the semester ends unless extended. Instructors should request them at least several weeks before the semester starts. Undergraduates doing research work need a faculty sponsor and must be registered under a legitimate PI-led project.
+</Note>
+
+## Log in
+
+Only two hosts accept connections from outside the CSI network: **`chizen.csi.cuny.edu`** and **`karle.csi.cuny.edu`**. Everything else must be reached by first logging in through one of those gateways.
+
+```bash
+ssh <your_username>@chizen.csi.cuny.edu
+```
+
+From the gateway, SSH into the system you want to use:
+
+```bash
+ssh <your_username>@arrow
+```
+
+The login banner (Message of the Day) often carries outage notices, maintenance windows, and policy reminders — read it every time you log in.
+
+### Logging in from Windows
+
+Windows 10 and 11 ship with OpenSSH — open **PowerShell** or **Windows Terminal** and use the same `ssh` command shown above. If you prefer a GUI:
+
+- **PuTTY** — set **Host Name** to `chizen.csi.cuny.edu`, port `22`, and save the session for reuse.
+- **MobaXterm** — bundles SSH, SFTP, and an X server, which makes X11 forwarding painless.
+- **WinSCP** — for drag-and-drop file transfers once you're connecting successfully over SSH.
+
+### X11 forwarding (running GUI apps)
+
+Some tools (MATLAB, ParaView, `xterm`) open a graphical window. To forward the display back to your laptop:
+
+```bash
+ssh -Y <your_username>@chizen.csi.cuny.edu
+ssh -Y arrow
+xclock           # quick sanity check — a clock face should appear on your desktop
+```
+
+- **macOS** — install [XQuartz](https://www.xquartz.org/), then log out and back in before using `-Y`.
+- **Windows** — use **MobaXterm** (X server built in) or install **VcXsrv**/**Xming** alongside PuTTY.
+- **Linux** — X is already running; `-Y` works out of the box.
+
+Rendering large datasets over X11 is slow. For anything heavier than dialog boxes, prefer batch rendering to an image or copying results back to your laptop.
+
+### Common login problems
+
+Working through this short checklist resolves most login failures:
+
+- Are you using the correct username?
+- Are you typing the correct password? (Remember — passwords are case-sensitive.)
+- Which system are you trying to connect to? Only **Chizen** and **Karle** are reachable from outside the CSI network — for everything else, log into Chizen first and then SSH onward.
+- Do you have access to the system you're connecting to? Confirm the full hostname (`host@csi.cuny.edu`).
+
+<Warning>
+  If SSH ever refuses to connect with a **`REMOTE HOST IDENTIFICATION HAS CHANGED`** warning, it usually means the gateway was rebuilt after maintenance. Remove the stale key with `ssh-keygen -R chizen.csi.cuny.edu` and reconnect. If the warning persists, stop and email the helpline — don't blindly accept a new key.
+</Warning>
+
+If you're still stuck after that, [open a ticket](https://hpchelp.csi.cuny.edu) or email the helpline.
+
+### SSH keys (recommended)
+
+Password authentication works but SSH keys are easier and more secure. Generate a key on your laptop, then install the public half on `chizen`:
+
+```bash
+ssh-keygen -t ed25519 -C "your.name@cuny.edu"
+ssh-copy-id <your_username>@chizen.csi.cuny.edu
+```
+
+After that, `ssh chizen.csi.cuny.edu` should not prompt for a password.
+
+## Password policy
+
+Passwords must comply with CUNY's password policy:
+
+- At least **8 characters** long.
+- Include all four character classes: one uppercase letter, one lowercase letter, one digit, and one of the approved special characters.
+- Case-sensitive.
+
+Change a password with the `passwd` command once logged in. If your password has expired, been forgotten, or the account is locked, reset it at **[hpcauth1.csi.cuny.edu/reset/](https://hpcauth1.csi.cuny.edu/reset/)** using your HPCC username and CUNY email. Email the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu) if the reset form doesn't recognize the account.
+
+<Note>
+  Password expiration intervals and account renewal cadence are set by CSI IT policy. Confirm current specifics on the [HPCC Wiki](https://wiki.csi.cuny.edu/cunyhpc/index.php/Main_Page) before training users on them.
+</Note>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Run your first job" icon="rocket" href="/quickstart">
+    End-to-end: log in, load a module, submit a Hello-SLURM job.
+  </Card>
+  <Card title="Learn the systems" icon="server" href="/systems">
+    What's available behind Chizen — Arrow and other clusters.
+  </Card>
+</CardGroup>

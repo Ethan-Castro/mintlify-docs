@@ -1,0 +1,72 @@
+---
+title: "FAQs"
+description: "Fast answers to the most common CSI HPCC questions, distilled from the HPCC Wiki."
+---
+
+For the full question set, see the [FAQs on the HPCC Wiki](https://wiki.csi.cuny.edu/cunyhpc/index.php/Main_Page).
+
+## Accounts & access
+
+<AccordionGroup>
+  <Accordion title="How do I get an account?" icon="user-plus">
+    Email **[HPCHelp@csi.cuny.edu](mailto:HPCHelp@csi.cuny.edu?subject=CSI%20HPCC%20account%20request)** with your name, CUNY affiliation, PI / sponsor, project description, and expected resource needs. Full details in [Accounts & access](/accounts-access).
+  </Accordion>
+  <Accordion title="How do I log in?" icon="right-to-bracket">
+    Use an SSH client to connect to `chizen.csi.cuny.edu`, then SSH from Chizen to the system you want (e.g., `arrow`). Only **Chizen** and **Karle** are reachable from outside the CSI network.
+  </Accordion>
+  <Accordion title="I can't log in — what do I check?" icon="triangle-exclamation">
+    Work through this list before opening a ticket:
+    - Are you using the correct username?
+    - Are you typing the correct password? (Passwords are case-sensitive.)
+    - Which system are you connecting to? Only Chizen and Karle are externally accessible.
+    - Do you have access to the system? Confirm the full hostname (`host@csi.cuny.edu`).
+  </Accordion>
+  <Accordion title="How do I reset my password?" icon="key">
+    Once logged in, run `passwd`. If you're locked out or the password has expired, email the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu). New passwords must meet CUNY policy — at least 8 characters, with uppercase, lowercase, digit, and an approved special character.
+  </Accordion>
+</AccordionGroup>
+
+## Storage & data
+
+<AccordionGroup>
+  <Accordion title="What is my disk quota?" icon="database">
+    The default is **50 GB / 10,000 files** on `/global/u/<username>`. Class accounts are capped lower (typically 10 GB). Request increases through the HPC Helpline with a short justification.
+  </Accordion>
+  <Accordion title="What is /scratch space?" icon="clock">
+    `/scratch` is temporary workspace used by jobs in the queue or in execution. Output from jobs may temporarily live there. **It is not backed up.** To keep anything from scratch, copy it to your home directory. Files older than roughly two weeks, or on a filesystem that's more than ~70% full, may be purged.
+  </Accordion>
+  <Accordion title="How do I transfer files?" icon="arrow-right-arrow-left">
+    Three options: **SFTP / SCP** (via `cea.csi.cuny.edu`), **Globus Online** (endpoint `cunyhpc#cea`, preferred for large transfers), and **iRODS** (for projects on an iRODS grid). See [Storage & quotas](/storage) for commands.
+  </Accordion>
+</AccordionGroup>
+
+## Jobs & software
+
+<AccordionGroup>
+  <Accordion title="How do I submit a job?" icon="play">
+    Write a SLURM script, save it (e.g., `run.sh`), and run `sbatch run.sh`. See the [Job submission](/job-submission) page for annotated templates for serial, OpenMP, MPI, hybrid, GPU, and array jobs.
+  </Accordion>
+  <Accordion title="Can I run jobs on the login node?" icon="ban">
+    **No.** Login-node jobs are killed and the account may be suspended. Use `sbatch`, or `srun --pty` for interactive compute-node sessions.
+  </Accordion>
+  <Accordion title="How do I see what software is available?" icon="boxes-stacked">
+    Run `module avail` to list modules, `module spider <name>` to search (LMOD only), and `module load <name>` to activate one. See [Software & modules](/software-modules).
+  </Accordion>
+  <Accordion title="I can't find the application I'm looking for." icon="magnifying-glass">
+    Email the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu) with the software name, version, install instructions or source link, and why you need it. For Python or Julia packages specifically, you can usually manage environments in your home directory yourself with `venv`, `conda`, or Julia's package manager.
+  </Accordion>
+  <Accordion title="How do I compile my own code?" icon="code">
+    See the [Program Compilation](http://wiki.csi.cuny.edu/cunyhpc/index.php/Programcompilation) page on the HPCC Wiki for compiler flags and linker hints that pair with the module tree.
+  </Accordion>
+</AccordionGroup>
+
+## Support
+
+<AccordionGroup>
+  <Accordion title="Who do I contact for help?" icon="life-ring">
+    For job- or account-specific issues, open a ticket at [hpchelp.csi.cuny.edu](https://hpchelp.csi.cuny.edu). For general questions or account requests, email [HPCHelp@csi.cuny.edu](mailto:HPCHelp@csi.cuny.edu). Don't email staff directly — those messages aren't answered.
+  </Accordion>
+  <Accordion title="How can I get one-on-one help?" icon="handshake">
+    The HPC Center offers helpdesk hours **by appointment** at both the Graduate Center and the College of Staten Island. Request a slot through the helpline.
+  </Accordion>
+</AccordionGroup>

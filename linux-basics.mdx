@@ -1,0 +1,219 @@
+---
+title: "Linux basics"
+description: "Essential Unix/Linux commands for new HPC users — file navigation, permissions, text editing, and process management."
+---
+
+The HPCC clusters run Linux. If you've never used a Linux shell before, this page covers the commands you'll use every day. If you're already comfortable with the command line, skip ahead to [Software & modules](/software-modules) or [Job submission](/job-submission).
+
+## The shell prompt
+
+After logging in, you'll see a prompt like:
+
+```
+[username@arrow ~]$
+```
+
+The `~` means you're in your home directory (`/global/u/<username>`). Everything after `$` is where you type.
+
+## Navigating files and directories
+
+| Command | What it does |
+| --- | --- |
+| `pwd` | Print the current working directory. |
+| `ls` | List files in the current directory. |
+| `ls -lh` | List with details (permissions, size in human-readable form). |
+| `ls -a` | Show hidden files (those starting with `.`). |
+| `cd /path/to/dir` | Change to a directory. |
+| `cd ~` | Go home. |
+| `cd ..` | Go up one level. |
+| `mkdir mydir` | Create a directory. |
+| `mkdir -p a/b/c` | Create nested directories in one step. |
+| `rmdir mydir` | Remove an empty directory. |
+
+## Managing files
+
+| Command | What it does |
+| --- | --- |
+| `cp source dest` | Copy a file. |
+| `cp -r sourcedir destdir` | Copy a directory (recursive). |
+| `mv old new` | Move or rename. |
+| `rm file` | Delete a file. |
+| `rm -r dir` | Delete a directory and everything inside it. |
+| `touch file` | Create an empty file (or update its timestamp). |
+
+<Warning>
+  `rm` on Linux is permanent — there is no trash folder or Recycle Bin. Double-check paths before deleting, especially with wildcards (`rm *.log`).
+</Warning>
+
+## Viewing file contents
+
+| Command | What it does |
+| --- | --- |
+| `cat file` | Print the entire file to the terminal. |
+| `less file` | Scroll through a file (press `q` to quit, `/pattern` to search). |
+| `head -n 20 file` | Show the first 20 lines. |
+| `tail -n 20 file` | Show the last 20 lines. |
+| `tail -f logfile` | Follow a file as it grows (useful for watching job output). |
+| `wc -l file` | Count lines. |
+
+## Searching
+
+| Command | What it does |
+| --- | --- |
+| `grep "pattern" file` | Print lines in `file` that match `pattern`. |
+| `grep -r "pattern" dir` | Recursive search across all files in `dir`. |
+| `grep -i "pattern" file` | Case-insensitive search. |
+| `find . -name "*.py"` | Find files matching a pattern below the current directory. |
+
+## File permissions
+
+Every file has an owner, a group, and a permission string like `-rw-r--r--`. The three groups of `rwx` bits map to **owner**, **group**, and **others**.
+
+```bash
+ls -l myscript.sh
+# -rwxr-x--- 1 username groupname 4096 Apr 1 12:00 myscript.sh
+```
+
+| Command | What it does |
+| --- | --- |
+| `chmod 755 file` | Owner can read/write/execute; group/others can read/execute. |
+| `chmod 600 file` | Owner can read/write; nobody else can touch it. Use for private keys. |
+| `chmod +x script.sh` | Add execute permission for everyone. |
+| `chown user:group file` | Change owner (usually needs `sudo`). |
+
+SLURM scripts must be readable by the scheduler but don't have to be executable — `sbatch` handles that. If you call them directly (`./script.sh`), you do need `chmod +x`.
+
+## Text editors
+
+**Nano** is the easiest to learn — it shows commands at the bottom:
+
+```bash
+nano myfile.txt
+# Ctrl+O → save   Ctrl+X → quit   Ctrl+K → cut line   Ctrl+U → paste
+```
+
+**Vim** is more powerful but has a learning curve:
+
+```bash
+vim myfile.txt
+# Press i to enter insert mode   Esc to exit   :w to save   :q! to quit without saving
+```
+
+## Redirects and pipes
+
+```bash
+command > output.txt        # write stdout to a file (overwrites)
+command >> output.txt       # append stdout to a file
+command 2> errors.txt       # write stderr to a file
+command > out.txt 2>&1      # write both stdout and stderr to one file
+command1 | command2         # pipe stdout of command1 into command2
+```
+
+Examples:
+
+```bash
+module avail 2>&1 | grep -i python      # search module list for Python
+cat data.csv | sort | uniq -c > counts.txt
+```
+
+## Variables and the environment
+
+```bash
+MY_VAR="hello"
+echo $MY_VAR                # prints: hello
+
+export DATA_DIR=/scratch/$USER/dataset
+cd $DATA_DIR
+```
+
+Important environment variables already set on HPCC nodes:
+
+| Variable | Value |
+| --- | --- |
+| `$USER` | Your username. |
+| `$HOME` | Your home directory. |
+| `$SLURM_JOB_ID` | Job ID (set by SLURM inside a job). |
+| `$SLURM_SUBMIT_DIR` | Directory where `sbatch` was called. |
+| `$SLURM_CPUS_PER_TASK` | Cores allocated to the task. |
+
+## Disk usage
+
+```bash
+df -h ~                     # how full your home filesystem is
+df -h /scratch/$USER        # how full scratch is
+du -sh ~/mydir              # how big a specific directory is
+du -sh ~/*                  # sorted breakdown of home contents
+```
+
+## Process management
+
+```bash
+ps aux | grep $USER         # see your running processes
+top                         # interactive process monitor (press q to quit)
+htop                        # friendlier version of top (may need module load)
+kill <PID>                  # terminate a process by ID
+kill -9 <PID>               # force-kill
+```
+
+<Warning>
+  Do not run compute jobs on the **login (head) node**. Long-running processes found there will be killed and the account may be suspended. Use `sbatch` for batch jobs or `srun --pty` for interactive compute sessions.
+</Warning>
+
+## Archiving and compression
+
+```bash
+tar -czvf archive.tar.gz mydir/    # create a gzip-compressed archive
+tar -xzvf archive.tar.gz           # extract
+tar -tzvf archive.tar.gz           # list contents without extracting
+gzip file                          # compress in place (file → file.gz)
+gunzip file.gz                     # decompress
+```
+
+## Shell history and shortcuts
+
+| Shortcut | What it does |
+| --- | --- |
+| `Up / Down arrow` | Scroll through command history. |
+| `Ctrl+R` | Reverse-search history — type a fragment to find a past command. |
+| `Ctrl+C` | Interrupt (kill) the current command. |
+| `Ctrl+Z` | Suspend the current command. |
+| `Tab` | Auto-complete file names, commands, and module names. |
+| `!!` | Repeat the last command. |
+| `!$` | Last argument of the previous command. |
+
+## Basic bash scripting
+
+A script is just a sequence of commands in a file:
+
+```bash
+#!/bin/bash
+# ── analysis.sh ──────────────────────────────────
+
+INPUT=$1            # first argument passed to the script
+OUTPUT=$2           # second argument
+
+echo "Processing $INPUT → $OUTPUT"
+
+grep "ERROR" "$INPUT" > "$OUTPUT"
+echo "Done. $(wc -l < "$OUTPUT") errors found."
+```
+
+Run it:
+
+```bash
+chmod +x analysis.sh
+./analysis.sh logfile.txt errors.txt
+```
+
+SLURM scripts are bash scripts with `#SBATCH` comment-directives at the top. See [Job submission](/job-submission) for complete templates.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Software & modules" icon="boxes-stacked" href="/software-modules">
+    Load compilers, MPI, Python, and scientific applications.
+  </Card>
+  <Card title="Job submission" icon="play" href="/job-submission">
+    Write and submit your first SLURM job.
+  </Card>
+</CardGroup>

@@ -1,0 +1,158 @@
+---
+title: "Applications & software catalog"
+description: "Scientific applications, compilers, MPI libraries, and languages available at CSI HPCC."
+---
+
+The HPCC maintains a broad software stack available through the LMOD environment module system on Arrow. Load any package with `module load <name>` after checking availability with `module spider <name>`. See [Software & modules](/software-modules) for full workflow.
+
+<Info>
+  This catalog reflects software known to be installed on Arrow. New packages are added over time and some may be retired. Always verify with `module avail` or `module spider` on the system you're using, then contact the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu) if something you need is missing.
+</Info>
+
+## Compilers
+
+| Package | Notes |
+| --- | --- |
+| **GNU Compiler Collection (GCC)** | Multiple versions. `gcc`, `g++`, `gfortran`. Default compiler on most nodes. |
+| **Intel oneAPI compilers** | `icc`, `icpc`, `ifort`. Highly optimized for Intel architectures; includes MKL. |
+| **NVIDIA HPC SDK (nvhpc)** | `nvc`, `nvc++`, `nvfortran`. OpenACC and CUDA Fortran support. |
+| **Cray compilers** | On some partitions; `cce`. Tightly coupled to Cray MPI. |
+
+```bash
+module spider gcc
+module load GCC/12.3.0
+```
+
+## MPI libraries
+
+| Package | Notes |
+| --- | --- |
+| **OpenMPI** | Recommended default for most CPU jobs. |
+| **Intel MPI** | Pairs with Intel compilers; typically faster on Intel nodes. |
+| **Cray MPICH** | Used on Cray-architecture partitions. |
+
+Choose the MPI that matches your compiler:
+
+```bash
+module load GCC/12.3.0
+module load OpenMPI/4.1.5-GCC-12.3.0
+mpicc -o my_prog my_prog.c
+```
+
+## Math and scientific libraries
+
+| Package | Notes |
+| --- | --- |
+| **FFTW** | Fast Fourier Transforms; single- and double-precision. |
+| **Intel MKL** | BLAS, LAPACK, ScaLAPACK, FFTW wrappers — bundled with Intel oneAPI. |
+| **OpenBLAS** | Open-source optimized BLAS/LAPACK. |
+| **HDF5** | Hierarchical data format; parallel (MPI) and serial builds available. |
+| **NetCDF** | Network Common Data Form; critical for climate and earth-science codes. |
+| **PETSc** | Parallel sparse linear algebra for PDEs. |
+| **SLEPc** | Scalable eigenvalue solvers built on PETSc. |
+| **ELPA** | Eigenvalue solvers for dense matrices, popular in quantum chemistry. |
+
+## GPU and CUDA
+
+| Package | Notes |
+| --- | --- |
+| **CUDA Toolkit** | Multiple versions. Required for raw CUDA C/C++ development. |
+| **cuDNN** | Deep learning primitives on top of CUDA (required by PyTorch / TensorFlow). |
+| **NCCL** | Collective communication for multi-GPU training. |
+
+```bash
+module spider CUDA
+module load CUDA/12.2.0
+nvcc -o my_kernel kernel.cu
+```
+
+## Languages and runtimes
+
+| Package | Notes |
+| --- | --- |
+| **Python** | Multiple versions (3.8, 3.10, 3.11, …). Includes pip; use `venv` or `conda` for isolation. |
+| **Julia** | Recommended for scientific computing newcomers to HPC. |
+| **R** | Statistical computing with access to CRAN packages. |
+| **Perl** | Available for bioinformatics pipelines that require it. |
+| **Java / JDK** | Needed by some bioinformatics tools (e.g., Trimmomatic, Picard). |
+
+### Managing Python environments
+
+```bash
+module load Python/3.10.4
+python -m venv ~/envs/myproject
+source ~/envs/myproject/bin/activate
+pip install numpy scipy matplotlib
+```
+
+Store environments in `/global/u/<username>` (home), not in `/scratch`, so they survive scratch purges.
+
+## Machine learning and AI
+
+| Package | Notes |
+| --- | --- |
+| **PyTorch** | Available as a module on GPU nodes; or install in a venv after loading CUDA. |
+| **TensorFlow** | Same approach as PyTorch. |
+| **JAX** | Install via pip in a venv; requires a matching CUDA module. |
+| **Horovod** | Distributed deep learning on multi-GPU / multi-node jobs. |
+
+GPU-enabled frameworks typically require `module load CUDA` and matching `cuDNN` **before** installing or importing the package.
+
+## Visualization and post-processing
+
+| Package | Notes |
+| --- | --- |
+| **ParaView** | Parallel visualization, client-server mode supported. |
+| **VisIt** | Visualization and analysis for large datasets. |
+| **gnuplot** | Lightweight 2-D and 3-D plotting from scripts. |
+| **ImageMagick** | Command-line image processing. |
+
+<Note>
+  GUI visualization tools require X11 forwarding (`ssh -Y`) or an off-cluster workflow where you copy results back to your laptop. Rendering is usually more practical done in batch using off-screen backends.
+</Note>
+
+## Chemistry and materials
+
+| Package | Notes |
+| --- | --- |
+| **Gaussian** | Licensed to CUNY; restricted to approved QOS/partition (e.g., `qoschem`). |
+| **GAMESS** | Free ab initio quantum chemistry. |
+| **ORCA** | Widely used for DFT and coupled-cluster calculations. |
+| **NAMD** | Molecular dynamics; highly optimized for GPU. |
+| **GROMACS** | Molecular dynamics; GPU-accelerated. |
+| **LAMMPS** | Classical MD; many interatomic potential packages. |
+| **Quantum ESPRESSO** | Plane-wave DFT for materials. |
+| **VASP** | Plane-wave DFT; **licensed** — requires PI to confirm access. |
+| **CP2K** | Electronic structure and MD. |
+
+## Bioinformatics
+
+| Package | Notes |
+| --- | --- |
+| **BLAST** | Sequence alignment. |
+| **BWA / Bowtie2** | Short-read alignment to reference genomes. |
+| **STAR** | RNA-seq alignment. |
+| **SAMtools / BCFtools** | SAM/BAM processing and variant calling. |
+| **GATK** | Variant calling pipeline (requires Java). |
+| **Trimmomatic / Fastp** | Read quality trimming. |
+| **SPAdes** | Genome assembly. |
+
+## Other domain applications
+
+| Package | Notes |
+| --- | --- |
+| **MATLAB** | Licensed for academic use; launched with `matlab -nodisplay -nojvm` in batch. |
+| **WRF** | Weather Research & Forecasting model. |
+| **OpenFOAM** | Open-source CFD; multiple versions. |
+| **Abaqus** | Finite-element analysis; requires license — contact helpline. |
+| **COMSOL** | Multi-physics simulation; requires license — contact helpline. |
+
+## Requesting new software
+
+Email [HPCHelp@csi.cuny.edu](mailto:HPCHelp@csi.cuny.edu) with:
+
+- The software name and the version you need.
+- A link to its install documentation or source.
+- A one-line justification (what research it enables).
+
+Staff prioritize packages that benefit multiple research groups. For personal Python / Julia / R packages, you can usually manage them yourself inside your home directory without waiting for a ticket.

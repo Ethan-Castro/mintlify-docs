@@ -1,0 +1,102 @@
+---
+title: "Software & modules"
+description: "Load compilers, MPI, and applications with the LMOD environment module system."
+---
+
+CSI HPCC ships dozens of compilers, MPI libraries, math libraries, language runtimes, and applications. Rather than installing software system-wide in conflicting versions, the center uses **environment modules** — each package is described by a module file that sets `PATH`, `LD_LIBRARY_PATH`, and related variables when loaded, and cleanly reverses those changes when unloaded.
+
+<Info>
+  Arrow uses **LMOD** (Lua-based, supports dependency hierarchies). The older Penzias and Appel servers use the **TCL**-based modules system, which has fewer features (no `module spider`, no automatic dependency resolution). The commands below target LMOD unless noted.
+</Info>
+
+## Core commands
+
+| Command | What it does |
+| --- | --- |
+| `module avail` | List all modules visible with the currently loaded prerequisites. |
+| `module spider <name>` | Search **all** modules (including those behind dependency chains) and show how to load them. LMOD only. |
+| `module whatis <name>` | Print a one-line description of a module. |
+| `module load <name>` | Load a module into the current shell. |
+| `module unload <name>` | Unload a previously loaded module. |
+| `module list` | Show everything currently loaded. |
+| `module purge` | Unload everything. |
+| `module swap <old> <new>` | Replace one loaded module with another. |
+
+## A typical workflow
+
+Inspect what's loaded by default, then change it for your job:
+
+```bash
+module list
+# Currently Loaded Modules (example):
+#   1) PrgEnv-cray/4.0.46    2) cce/15.0.1    3) xt-libsci
+
+module unload PrgEnv-cray
+module load PrgEnv-gnu
+```
+
+Search for a package and load a specific version:
+
+```bash
+module spider python
+module load Python/3.10.4
+python3 -c "import sys; print(sys.version)"
+```
+
+Inside a SLURM script, load every module you need **before** launching your program, so compute nodes start with the right environment:
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=python_job
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --time=00:30:00
+
+module purge
+module load Python/3.10.4
+module load NETCDF/4.2.0      # example: NETCDF compiled with PGI
+
+cd $SLURM_SUBMIT_DIR
+python3 analysis.py
+```
+
+<Tip>
+  Starting a script with `module purge` makes it reproducible — it doesn't matter what was loaded in the submitter's interactive shell.
+</Tip>
+
+## What's available
+
+The module tree covers the usual HPC stack:
+
+- **Compilers:** GNU, Intel, Cray, NVIDIA (HPC SDK).
+- **MPI:** Cray MPICH, OpenMPI, Intel MPI (depending on the system).
+- **Math / scientific libraries:** FFTW, NetCDF, HDF5, BLAS/LAPACK implementations.
+- **Languages:** Python (multiple versions), Julia, R, Perl.
+- **Applications:** MATLAB, and domain-specific codes as installed by HPCC staff.
+
+The exact versions available evolve over time — always check with `module avail` or `module spider` on the system you're using, not a memorized list.
+
+## Requesting new software
+
+If a package you need isn't installed, email the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu) with:
+
+- The software name and version you'd like.
+- A link to its install instructions or source.
+- Why you need it (a one-line justification is fine).
+
+For personal Python or Julia environments you can typically manage packages yourself inside your home directory — use `python -m venv`, `conda env create`, or Julia's package manager.
+
+## Compiling your own code
+
+See the [Program Compilation](http://wiki.csi.cuny.edu/cunyhpc/index.php/Programcompilation) page on the HPCC Wiki for compiler flags and linker hints that work cleanly with the module tree.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Submit a job" icon="play" href="/job-submission">
+    Annotated SLURM templates that show where `module load` fits.
+  </Card>
+  <Card title="Storage & quotas" icon="database" href="/storage">
+    Where to install your virtualenvs and Conda environments.
+  </Card>
+</CardGroup>

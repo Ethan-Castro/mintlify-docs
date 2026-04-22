@@ -1,0 +1,256 @@
+---
+title: "Job submission"
+description: "Annotated SLURM templates for serial, multi-threaded, MPI, hybrid, GPU, and array jobs."
+---
+
+Every job on CSI HPCC is submitted through **SLURM**. This page collects annotated templates for the common job shapes. Copy one, edit the `#SBATCH` directives, add your `module load`s, and submit with `sbatch`.
+
+<Warning>
+  **Three rules that apply to every job:**
+  1. Start from `/scratch/<username>` — **never** from `/global/u/<username>` (your home).
+  2. Use SLURM syntax. Older PBS Pro scripts must be converted.
+  3. **Never run jobs on the login (head) node.** Any job found running there will be killed and the account may be suspended.
+</Warning>
+
+## Anatomy of a SLURM script
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=my_job          # a short name that shows up in squeue
+#SBATCH --nodes=1                  # how many nodes
+#SBATCH --ntasks=1                 # how many MPI tasks total
+#SBATCH --cpus-per-task=1          # CPU cores per task (>1 for threaded work)
+#SBATCH --mem-per-cpu=4G           # RAM per core
+#SBATCH --time=01:00:00            # wall-clock limit (HH:MM:SS)
+#SBATCH --output=slurm-%j.out      # stdout file (%j = job ID)
+#SBATCH --error=slurm-%j.err       # stderr file
+#SBATCH --qos=<qos_name>           # your project's QOS
+#SBATCH --partition=<part_name>    # your project's partition
+
+module purge
+module load <modules_you_need>
+
+cd $SLURM_SUBMIT_DIR
+srun ./your_program
+```
+
+<Info>
+  Real jobs on HPCC typically need `--qos` and `--partition` matching your project (for example `--qos=qoschem --partition=partchem`). If you don't know which values to use, ask your PI or the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu) — those values are omitted from examples below so you can paste them in once.
+</Info>
+
+## Partitions and QOS
+
+Every job must name a partition (`--partition`) and a QOS (`--qos`). **Public partitions** are open to every project; **private partitions** are reserved for condo owners and their affiliated groups.
+
+### Public partitions
+
+| Partition | Max cores/job | Max jobs/user | Max cores/group | Wall-clock limit |
+| --- | --- | --- | --- | --- |
+| `production` | 128 | 50 | 256 | 240 h |
+| `partedu` | 16 | 2 | 216 | 72 h |
+| `partmath` | 128 | 128 | 128 | 240 h |
+| `partmatlab` | 1972 | 50 | 1972 | 240 h |
+| `partdev` | 16 | 16 | 16 | 4 h |
+
+`partdev` is the right place for compiling and short smoke tests — four-hour cap, but jobs start quickly. `partmatlab` is shared with the MATLAB daytime/nighttime QOS (`qosmatlabD` / `qosmatlabN`).
+
+### Private (condo) partitions
+
+Private partitions match a QOS on a 1-to-1 basis. Use them only if your PI's project has been granted access.
+
+| Partition | QOS | Owner group |
+| --- | --- | --- |
+| `partnsf` | `qosnsf` | NSF-funded projects |
+| `partchem` | `qoschem` | Chemistry |
+| `partmath` | `qosmath`, `qosmath_high` | Applied math |
+| `partcfd` | `qoscfd_high` | CFD |
+| `partphys` | `qosphys_high` | Physics |
+| `partsym` | `qossmhigh` | Symmetry / applied math |
+| `partasrc` | `qosasrchigh` | ASRC / atmospheric sciences |
+| `parteng` | `qoseng` | Engineering |
+
+<Tip>
+  Run `sinfo -s` to see which partitions are currently up, and `sacctmgr show assoc user=$USER format=Account,Partition,QOS` to confirm which QOS values your account is allowed to use.
+</Tip>
+
+### Submitting, watching, and cancelling
+
+```bash
+sbatch script.sh                    # submit (prints a job ID)
+squeue -u $USER                     # your jobs in the queue
+squeue -j <jobid>                   # one specific job
+sacct -j <jobid> --format=JobID,State,Elapsed,MaxRSS
+scancel <jobid>                     # cancel a job
+scontrol show job <jobid>           # everything SLURM knows about it
+```
+
+## Serial job (one core)
+
+The simplest case — one process, one core.
+
+```bash serial.sh
+#!/bin/bash
+#SBATCH --job-name=serial_job
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=8G
+#SBATCH --time=01:00:00
+#SBATCH --qos=qoschem
+#SBATCH --partition=partchem
+
+module purge
+module load <your_modules>
+
+cd $SLURM_SUBMIT_DIR
+srun ./my_serial_program
+```
+
+## Multi-threaded (OpenMP)
+
+One task, multiple cores on the same node. Set `OMP_NUM_THREADS` so your program actually uses the cores SLURM allocated.
+
+```bash openmp.sh
+#!/bin/bash
+#SBATCH --job-name=omp_job
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem-per-cpu=4G
+#SBATCH --time=01:00:00
+
+module purge
+module load <your_modules>       # must include an OpenMP-capable compiler runtime
+
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+
+cd $SLURM_SUBMIT_DIR
+srun ./my_openmp_program         # built with -fopenmp (or compiler equivalent)
+```
+
+## MPI (multiple nodes)
+
+Distributed-memory parallelism across nodes.
+
+```bash mpi.sh
+#!/bin/bash
+#SBATCH --job-name=mpi_job
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=32
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=16G
+#SBATCH --time=04:00:00
+
+module purge
+module load <compiler_module>
+module load <mpi_module>
+
+cd $SLURM_SUBMIT_DIR
+srun ./my_mpi_program            # 64 ranks total: 32 × 2 nodes
+```
+
+## Hybrid MPI + OpenMP
+
+MPI between nodes, OpenMP threads within each rank.
+
+```bash hybrid.sh
+#!/bin/bash
+#SBATCH --job-name=hybrid_job
+#SBATCH --nodes=2
+#SBATCH --ntasks=24
+#SBATCH --ntasks-per-node=12
+#SBATCH --cpus-per-task=2
+#SBATCH --mem-per-cpu=16G
+#SBATCH --time=04:00:00
+
+module purge
+module load <compiler_module>
+module load <mpi_module>
+
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export SRUN_CPUS_PER_TASK=$SLURM_CPUS_PER_TASK
+
+cd $SLURM_SUBMIT_DIR
+srun ./my_hybrid_program         # 24 ranks × 2 OMP threads each
+```
+
+The prototype above allocates 12 ranks per node × 2 nodes = **24 MPI ranks**, each spawning **2 OpenMP threads**. Adjust `--qos`, `--partition`, and `--mem-per-cpu` for your project before submitting.
+
+## GPU job
+
+Request GPUs with `--gres=gpu:<count>`. On Arrow, up to **8 GPUs per node** are available.
+
+```bash gpu.sh
+#!/bin/bash
+#SBATCH --job-name=gpu_job
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=16G
+#SBATCH --gres=gpu:1
+#SBATCH --time=02:00:00
+
+module purge
+module load <cuda_or_framework_module>
+
+cd $SLURM_SUBMIT_DIR
+srun ./my_gpu_program
+```
+
+### GPU with a specific type
+
+Appel's `partnsf`, `partchem`, and `partmath` partitions host **mixed GPU types** (A30, A40, A100). Constrain on SKU, compute capability, or memory:
+
+```bash
+#SBATCH --gres=gpu:1 --constraint='gpu_sku:V100'
+#SBATCH --gres=gpu:1 --constraint='gpu_cc:12.0'
+#SBATCH --gres=gpu:1 --constraint='gpu_mem:48GB'
+```
+
+## Job array (parameter sweep)
+
+Run many copies of the same job, each with a different `$SLURM_ARRAY_TASK_ID`.
+
+```bash array.sh
+#!/bin/bash
+#SBATCH --job-name=array_job
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=16G
+#SBATCH --time=01:00:00
+#SBATCH --array=0-5
+#SBATCH --output=slurm-%A_%a.out       # %A = array job ID, %a = task index
+#SBATCH --error=slurm-%A_%a.err
+
+module purge
+module load <your_modules>
+
+cd $SLURM_SUBMIT_DIR
+echo "Array task ID: $SLURM_ARRAY_TASK_ID"
+srun ./my_program --case "$SLURM_ARRAY_TASK_ID"
+```
+
+This submits **6 jobs** (indices 0–5) sharing a single array job ID.
+
+## Interactive debugging
+
+For quick, interactive access to a compute node (short sessions only — don't hold nodes idle):
+
+```bash
+srun --pty --nodes=1 --ntasks=1 --cpus-per-task=4 --mem-per-cpu=4G --time=00:30:00 bash
+```
+
+Load modules and run commands as if you were on a compute node. Exit the shell to release the allocation.
+
+## Troubleshooting cheatsheet
+
+| Symptom | First thing to check |
+| --- | --- |
+| Job sits `PENDING` indefinitely | Run `squeue -j <jobid> -o "%i %T %r"` — the reason column explains why (priority, resources, QOS limit, etc.). |
+| Job fails immediately with "invalid partition / QOS" | Your `--qos` or `--partition` values are wrong for your project. |
+| Job runs but crashes with no output | You launched from `/global/u`. Move to `/scratch/$USER` and resubmit. |
+| `srun: error: Unable to create TCP connection` | Usually a transient node issue — resubmit, or check with the helpline if it repeats. |
+| GPU allocated but program can't see it | Add `nvidia-smi` to your script to confirm, and make sure you `module load`ed the matching CUDA runtime. |
+
+Still stuck? Open a [ticket](https://hpchelp.csi.cuny.edu) with the job ID, the command you ran, and the contents of the `.out` and `.err` files. The FAQ on the [HPCC Wiki](https://wiki.csi.cuny.edu/cunyhpc/index.php/Main_Page) covers more edge cases.

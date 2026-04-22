@@ -1,68 +1,63 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "theme": "luma",
+  "name": "CSI HPCC Documentation",
+  "description": "Documentation and educational guide for the College of Staten Island High Performance Computing Center (CSI HPCC) — clusters, SLURM, storage, tutorials, policies, and support.",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#1E3A8A",
+    "light": "#3B82F6",
+    "dark": "#1E40AF"
   },
   "favicon": "/favicon.svg",
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
             "group": "Getting started",
             "pages": [
               "index",
+              "overview",
+              "accounts-access",
               "quickstart",
-              "development"
+              "linux-basics"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Systems",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "systems",
+              "software-modules",
+              "applications",
+              "storage"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Running jobs",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "job-submission"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Reference",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "policies",
+              "pricing-tiers",
+              "faqs",
+              "changelog"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Support",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Help",
             "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoint examples",
-            "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "support",
+              "training"
             ]
           }
         ]
@@ -71,14 +66,19 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "HPCC Portal",
+          "href": "https://hpchome.csi.cuny.edu",
+          "icon": "server"
         },
         {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "HPCC Wiki",
+          "href": "https://wiki.csi.cuny.edu/cunyhpc/index.php/Main_Page",
+          "icon": "book-open"
+        },
+        {
+          "anchor": "Open a ticket",
+          "href": "https://hpchelp.csi.cuny.edu",
+          "icon": "life-ring"
         }
       ]
     }
@@ -90,33 +90,28 @@
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "label": "HPC Helpline",
+        "href": "mailto:HPCHelp@csi.cuny.edu"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Request account",
+      "href": "mailto:HPCHelp@csi.cuny.edu?subject=CSI%20HPCC%20account%20request"
     }
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity"
+    ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "github": "https://github.com/mintlify"
     }
   }
 }

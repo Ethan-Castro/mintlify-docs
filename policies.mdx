@@ -1,0 +1,72 @@
+---
+title: "Policies & security"
+description: "The rules every CSI HPCC user is expected to follow."
+---
+
+Using CSI HPCC means agreeing to CUNY's acceptable-use, privacy, and IT security policies. This page summarizes the rules most likely to trip up new users. Where it disagrees with official CSI/CUNY policy, the official policy wins.
+
+## Acceptable use
+
+- **Comply with CUNY policy.** The CUNY Acceptable Use of Computer Resources policy governs everything on HPCC systems. Illegal activity, harassment, and any use that violates CUNY's code of conduct is prohibited.
+- **Don't share accounts.** Your credentials are personal. If another person needs access, they should get their own account. Shared accounts are suspended on discovery.
+- **Credit HPCC in publications.** Every paper, poster, thesis, or report that used CSI HPCC resources must include the acknowledgement below — and a paper copy of the finished work must be sent to the helpline.
+
+## Citing CSI HPCC
+
+Because the center's compute infrastructure is funded in large part by NSF, acknowledgement is not optional. Include the following statement in the acknowledgements section:
+
+> This research was supported, in part, under National Science Foundation Grants CNS-0958379, CNS-0855217, ACI-1126113, and OAC-2215760, and the City University of New York High Performance Computing Center at the College of Staten Island.
+
+After publication, email a PDF (or mail a paper copy) to **[HPCHelp@csi.cuny.edu](mailto:HPCHelp@csi.cuny.edu)**. The center uses the list of publications to report outcomes to its funders and to justify future hardware renewals.
+
+## The login-node rule
+
+<Warning>
+  **Jobs are never to be run on the head (login) node.** Any job found running there will be killed, and the owning account may be suspended. Log in, edit files, submit SLURM jobs — that's what the login node is for. Anything heavier runs through `sbatch` or `srun`.
+</Warning>
+
+If you need an interactive shell on a compute node for debugging, use `srun --pty` (see [Job submission](/job-submission#interactive-debugging)).
+
+## Passwords
+
+Passwords must meet CUNY's password policy:
+
+- At least **8 characters** long.
+- All four character classes: uppercase, lowercase, digit, and an approved special character.
+- Case-sensitive.
+
+If your password expires or you get locked out, email the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu) for a reset.
+
+<Note>
+  Password expiration intervals, renewal windows, and any multi-factor requirements are set by CSI IT. Confirm current specifics on the [HPCC Wiki](https://wiki.csi.cuny.edu/cunyhpc/index.php/Main_Page) before publishing dates here.
+</Note>
+
+## Data security
+
+- **Regulated data** (HIPAA, FERPA, IRB-protected, export-controlled, etc.) must not land on HPCC systems without explicit clearance from HPCC staff and your compliance officer. Not every partition is configured for sensitive workloads.
+- **Keep backups off-cluster** for anything you can't afford to lose. `/scratch` is not backed up and is purged; `/global/u` is backed up but tape restore is not instantaneous.
+- **Encrypt in transit.** Always use SSH / SFTP / SCP / Globus. Plain FTP and Telnet aren't available and shouldn't be.
+- **Don't store credentials in code.** `~/.ssh/id_*`, API keys, and other secrets belong in files with `chmod 600`, not in scripts that land in a git repo.
+
+## Software licensing
+
+Commercial software (MATLAB, Intel compilers, domain-specific codes) is licensed for academic use only. Don't redistribute binaries, license files, or outputs that include license-restricted material. When in doubt, ask the helpline whether a particular use is permitted.
+
+## Account lifecycle
+
+Accounts are created for a specific project and user. They may be suspended or closed when:
+
+- The associated project ends.
+- The user leaves CUNY.
+- The account has been inactive long enough to trigger automated cleanup.
+- The account has violated policy.
+
+Data on suspended accounts is not retained indefinitely — copy out anything you want to keep before you leave.
+
+## Incident reporting
+
+If you see something that looks like an incident (a compromised account, suspicious processes, a policy violation), email **[HPCHelp@csi.cuny.edu](mailto:HPCHelp@csi.cuny.edu)** with "SECURITY" in the subject. Escalate serious incidents to the CSI IT Help Desk as well.
+
+## Accessibility
+
+This documentation aims to meet **WCAG 2.1 AA**. If you encounter a barrier — screen-reader trouble, color-contrast issues, missing alt text, keyboard navigation problems — let us know so it can be fixed.
