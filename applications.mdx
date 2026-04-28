@@ -3,10 +3,10 @@ title: "Applications & software catalog"
 description: "Scientific applications, compilers, MPI libraries, and languages available at CSI HPCC."
 ---
 
-The HPCC maintains a broad software stack available through the LMOD environment module system on Arrow. Load any package with `module load <name>` after checking availability with `module spider <name>`. See [Software & modules](/software-modules) for full workflow.
+The HPCC maintains a broad software stack through the Lmod environment module system. Load packages with `module load <name>` after checking availability with `module spider <name>` or `module avail`. See [Software & modules](/software-modules) for the full workflow.
 
 <Info>
-  This catalog reflects software known to be installed on Arrow. New packages are added over time and some may be retired. Always verify with `module avail` or `module spider` on the system you're using, then contact the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu) if something you need is missing.
+  This catalog is a practical orientation, not a guarantee that every package is installed on every HPCC system. New packages are added over time and some may be retired. Always verify with `module avail` or `module spider` on the system you're using, then contact the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu) if something you need is missing.
 </Info>
 
 ## Compilers
@@ -14,9 +14,9 @@ The HPCC maintains a broad software stack available through the LMOD environment
 | Package | Notes |
 | --- | --- |
 | **GNU Compiler Collection (GCC)** | Multiple versions. `gcc`, `g++`, `gfortran`. Default compiler on most nodes. |
-| **Intel oneAPI compilers** | `icc`, `icpc`, `ifort`. Highly optimized for Intel architectures; includes MKL. |
+| **Intel compiler suite / oneAPI** | Check the module for current compiler names such as `icx`, `icpx`, `ifx`, or legacy `icc` / `ifort`; includes MKL. |
 | **NVIDIA HPC SDK (nvhpc)** | `nvc`, `nvc++`, `nvfortran`. OpenACC and CUDA Fortran support. |
-| **Cray compilers** | On some partitions; `cce`. Tightly coupled to Cray MPI. |
+| **Cray compilers** | Legacy Cray environments only; verify current availability before using Cray-specific examples. |
 
 ```bash
 module spider gcc
@@ -29,7 +29,7 @@ module load GCC/12.3.0
 | --- | --- |
 | **OpenMPI** | Recommended default for most CPU jobs. |
 | **Intel MPI** | Pairs with Intel compilers; typically faster on Intel nodes. |
-| **Cray MPICH** | Used on Cray-architecture partitions. |
+| **Cray MPICH** | Legacy Cray environments only; verify current availability before use. |
 
 Choose the MPI that matches your compiler:
 
@@ -44,7 +44,7 @@ mpicc -o my_prog my_prog.c
 | Package | Notes |
 | --- | --- |
 | **FFTW** | Fast Fourier Transforms; single- and double-precision. |
-| **Intel MKL** | BLAS, LAPACK, ScaLAPACK, FFTW wrappers — bundled with Intel oneAPI. |
+| **Intel MKL** | BLAS, LAPACK, ScaLAPACK, FFTW wrappers bundled with Intel oneAPI. |
 | **OpenBLAS** | Open-source optimized BLAS/LAPACK. |
 | **HDF5** | Hierarchical data format; parallel (MPI) and serial builds available. |
 | **NetCDF** | Network Common Data Form; critical for climate and earth-science codes. |
@@ -91,10 +91,9 @@ Store environments in `/global/u/<username>` (home), not in `/scratch`, so they 
 
 | Package | Notes |
 | --- | --- |
-| **PyTorch** | Available as a module on GPU nodes; or install in a venv after loading CUDA. |
-| **TensorFlow** | Same approach as PyTorch. |
-| **JAX** | Install via pip in a venv; requires a matching CUDA module. |
-| **Horovod** | Distributed deep learning on multi-GPU / multi-node jobs. |
+| **PyTorch** | Install in a user environment after loading a compatible CUDA module unless a site module is available. |
+| **TensorFlow** | Install in a user environment after loading a compatible CUDA module unless a site module is available. |
+| **JAX** | Install via pip in a user environment; GPU builds require a matching CUDA stack. |
 
 GPU-enabled frameworks typically require `module load CUDA` and matching `cuDNN` **before** installing or importing the package.
 
@@ -122,7 +121,6 @@ GPU-enabled frameworks typically require `module load CUDA` and matching `cuDNN`
 | **GROMACS** | Molecular dynamics; GPU-accelerated. |
 | **LAMMPS** | Classical MD; many interatomic potential packages. |
 | **Quantum ESPRESSO** | Plane-wave DFT for materials. |
-| **VASP** | Plane-wave DFT; **licensed** — requires PI to confirm access. |
 | **CP2K** | Electronic structure and MD. |
 
 ## Bioinformatics
@@ -144,8 +142,7 @@ GPU-enabled frameworks typically require `module load CUDA` and matching `cuDNN`
 | **MATLAB** | Licensed for academic use; launched with `matlab -nodisplay -nojvm` in batch. |
 | **WRF** | Weather Research & Forecasting model. |
 | **OpenFOAM** | Open-source CFD; multiple versions. |
-| **Abaqus** | Finite-element analysis; requires license — contact helpline. |
-| **COMSOL** | Multi-physics simulation; requires license — contact helpline. |
+| **LS-DYNA** | Structural and crash analysis; licensed academic use on supported systems. |
 
 ## Requesting new software
 

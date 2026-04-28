@@ -9,7 +9,7 @@ This walkthrough takes you from a fresh HPCC account to a running job in about t
   **Prerequisites:** An approved HPCC account. If you don't have one, start with [Accounts & access](/accounts-access).
 </Info>
 
-## Step 1 — Log in
+## Step 1: Log in
 
 From your laptop, SSH to the Chizen gateway and then onto the cluster you want to use (Arrow is the default for most users):
 
@@ -19,10 +19,10 @@ ssh <your_username>@arrow
 ```
 
 <Tip>
-  If you're off-campus and connections fail, confirm you're reaching an externally accessible gateway (**Chizen** or **Karle** only) — all other systems require you to go through one of those first.
+  If you're off-campus and connections fail, confirm you're reaching an externally accessible gateway (**Chizen** or **Karle** only). All other systems require you to go through one of those first.
 </Tip>
 
-## Step 2 — Check your storage
+## Step 2: Check your storage
 
 Home and scratch are separate. Home is small and durable; scratch is larger and temporary. Check both:
 
@@ -31,11 +31,11 @@ df -h ~                    # your home directory (/global/u/<username>)
 df -h /scratch/$USER       # your scratch workspace
 ```
 
-The default home quota is **50 GB / 10,000 files**. Jobs **must** run out of scratch — don't launch from your home directory.
+The default home quota is **50 GB / 10,000 files**. Jobs **must** run out of scratch; don't launch from your home directory.
 
 See [Storage & quotas](/storage) for full details.
 
-## Step 3 — Find a module
+## Step 3: Find a module
 
 The HPCC uses the **LMOD** environment module system on Arrow. Browse what's available:
 
@@ -48,12 +48,12 @@ module list             # show what's currently loaded
 Load the module you want:
 
 ```bash
-module load Python/3.10.4       # exact version string may differ — check module avail
+module load Python/3.10.4       # exact version string may differ; check module avail
 ```
 
 See [Software & modules](/software-modules) for the full workflow.
 
-## Step 4 — Write your first SLURM script
+## Step 4: Write your first SLURM script
 
 Move to your scratch directory and create `hello.sh`:
 
@@ -74,16 +74,16 @@ mkdir -p hello-slurm && cd hello-slurm
 #SBATCH --time=00:01:00
 
 cd $SLURM_SUBMIT_DIR
-echo "Hello from $(hostname) — job $SLURM_JOB_ID"
+echo "Hello from $(hostname) - job $SLURM_JOB_ID"
 sleep 5
 echo "Done."
 ```
 
 <Warning>
-  The research-generated template above omits `--qos` and `--partition`, which real HPCC jobs typically require (for example `--qos=qoschem --partition=partchem`). Ask your PI or the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu) which QOS / partition applies to your project before submitting production work.
+  The minimal template above omits `--qos` and `--partition`, which real HPCC jobs typically require (for example `--qos=qoschem --partition=partchem`). Ask your PI or the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu) which QOS / partition applies to your project before submitting production work.
 </Warning>
 
-## Step 5 — Submit and monitor
+## Step 5: Submit and monitor
 
 ```bash
 sbatch hello.sh          # submit; prints the job ID

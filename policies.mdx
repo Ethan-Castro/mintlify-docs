@@ -9,20 +9,20 @@ Using CSI HPCC means agreeing to CUNY's acceptable-use, privacy, and IT security
 
 - **Comply with CUNY policy.** The CUNY Acceptable Use of Computer Resources policy governs everything on HPCC systems. Illegal activity, harassment, and any use that violates CUNY's code of conduct is prohibited.
 - **Don't share accounts.** Your credentials are personal. If another person needs access, they should get their own account. Shared accounts are suspended on discovery.
-- **Credit HPCC in publications.** Every paper, poster, thesis, or report that used CSI HPCC resources must include the acknowledgement below — and a paper copy of the finished work must be sent to the helpline.
+- **Credit HPCC in publications.** Every paper, poster, thesis, or report that used CSI HPCC resources must include the acknowledgement below, and a paper copy of the finished work must be sent to the helpline.
 
 ## Citing CSI HPCC
 
 Because the center's compute infrastructure is funded in large part by NSF, acknowledgement is not optional. Include the following statement in the acknowledgements section:
 
-> This research was supported, in part, under National Science Foundation Grants CNS-0958379, CNS-0855217, ACI-1126113, and OAC-2215760, and the City University of New York High Performance Computing Center at the College of Staten Island.
+> This research was supported, in part, under National Science Foundation Grants: CNS-0958379, CNS-0855217, ACI-1126113 and OAC-2215760 (2022) and the City University of New York High Performance Computing Center at the College of Staten Island.
 
 After publication, email a PDF (or mail a paper copy) to **[HPCHelp@csi.cuny.edu](mailto:HPCHelp@csi.cuny.edu)**. The center uses the list of publications to report outcomes to its funders and to justify future hardware renewals.
 
 ## The login-node rule
 
 <Warning>
-  **Jobs are never to be run on the head (login) node.** Any job found running there will be killed, and the owning account may be suspended. Log in, edit files, submit SLURM jobs — that's what the login node is for. Anything heavier runs through `sbatch` or `srun`.
+  **Jobs are never to be run on the head (login) node.** Any job found running there will be killed, and the owning account may be suspended. Log in, edit files, and submit SLURM jobs. That's what the login node is for. Anything heavier runs through `sbatch` or `srun`.
 </Warning>
 
 If you need an interactive shell on a compute node for debugging, use `srun --pty` (see [Job submission](/job-submission#interactive-debugging)).
@@ -61,7 +61,7 @@ Accounts are created for a specific project and user. They may be suspended or c
 - The account has been inactive long enough to trigger automated cleanup.
 - The account has violated policy.
 
-Data on suspended accounts is not retained indefinitely — copy out anything you want to keep before you leave.
+Data on suspended accounts is not retained indefinitely, so copy out anything you want to keep before you leave.
 
 ## Incident reporting
 
@@ -69,4 +69,4 @@ If you see something that looks like an incident (a compromised account, suspici
 
 ## Accessibility
 
-This documentation aims to meet **WCAG 2.1 AA**. If you encounter a barrier — screen-reader trouble, color-contrast issues, missing alt text, keyboard navigation problems — let us know so it can be fixed.
+This documentation aims to meet **WCAG 2.1 AA**. If you encounter a barrier, such as screen-reader trouble, color-contrast issues, missing alt text, or keyboard navigation problems, let us know so it can be fixed.

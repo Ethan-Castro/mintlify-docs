@@ -2,13 +2,13 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "luma",
   "name": "CSI HPCC Documentation",
-  "description": "Documentation and educational guide for the College of Staten Island High Performance Computing Center (CSI HPCC) — clusters, SLURM, storage, tutorials, policies, and support.",
+  "description": "Documentation and educational guide for the College of Staten Island High Performance Computing Center (CSI HPCC): clusters, SLURM, storage, tutorials, policies, and support.",
   "colors": {
     "primary": "#7abde8",
     "light": "#7abde8",
     "dark": "#7abde8"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/images/hardware/images (10).png",
   "navigation": {
     "tabs": [
       {
@@ -146,7 +146,7 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/mintlify"
+      "github": "https://github.com/Ethan-Castro/mintlify-docs"
     }
   }
 }

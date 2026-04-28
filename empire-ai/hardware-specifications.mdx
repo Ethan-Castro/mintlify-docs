@@ -7,12 +7,9 @@ Empire AI is being built as a phased AI supercomputing environment centered on a
 
 ## Alpha system
 
-Alpha is the first production-facing phase of the platform. The source materials describe Alpha in two ways:
+Alpha is the first production-facing phase of the platform.
 
-- Public launch materials describe the initial October 2024 system as a first-stage cluster built around 96 top-tier processors.
-- The planning brief for this documentation project describes the expanded Alpha environment as a 144-H100 system used for pilot workflows and cluster stress-testing.
-
-Taken together, the practical picture is that Alpha is the early adopter environment researchers use to validate software stacks, data paths, and job patterns before the full Beta-scale system is online.
+Public Empire AI materials describe the October 2024 launch as a first-stage system powered by 96 advanced processors. CCR's user documentation describes Alpha as the current onboarding and early-use environment while Beta procedures continue to mature. In practice, Alpha is where researchers validate software stacks, data paths, and job patterns before moving to larger allocations.
 
 <Warning>
   Alpha is an early-access research environment, not the final target architecture. It is useful for onboarding and experimentation, but the larger Blackwell-based Beta platform is where the consortium's long-term AI scale begins.
@@ -20,7 +17,7 @@ Taken together, the practical picture is that Alpha is the early adopter environ
 
 ## Beta system
 
-Beta is the major architecture jump. According to the planning materials, it is funded in part by a $40 million Empire State Development tranche and is engineered to be roughly 11 times more powerful than Alpha, with about 40 times the inference throughput and 8 times the storage footprint.
+Beta is the major architecture jump. Empire AI announced Beta in June 2025 with a $40 million investment and described it as roughly 11 times stronger for AI training than Alpha, with about 40 times the inference throughput and 8 times the storage footprint.
 
 <Tip>
   Beta uses an NVIDIA DGX SuperPOD built on DGX GB200 systems. That matters because it combines Blackwell GPUs, Grace CPUs, high-bandwidth memory, and a unified NVLink fabric in a design aimed at very large distributed AI workloads.
@@ -34,13 +31,46 @@ Beta is the major architecture jump. According to the planning materials, it is 
 | CPU nodes | 60 nodes with NVIDIA Grace CPU Superchips |
 | Blackwell transistor count | 208 billion transistors per GPU |
 | Process technology | TSMC 4NP |
-| Superchip design | 2 Blackwell GPUs plus 1 Grace-72 core CPU per GB200 Superchip |
+| Superchip design | DGX GB200 systems built around Grace Blackwell Superchips |
 | Interconnect | NVLink unified fabric |
 | Rack-scale bandwidth | Up to 130 TB/s across a single NVL72 rack |
 | Rack-scale AI performance | Up to 1.44 exaFLOPS at FP4 precision |
 | Storage tier 1 | 20+ PB on the VAST Data AI Operating System |
 | Storage tier 2 | 10+ PB on DDN's data intelligence platform |
 | Operations software | NVIDIA AI Enterprise and NVIDIA Mission Control |
+
+## Beta hardware
+
+<Frame caption="NVIDIA GB200 NVL72: a single liquid-cooled rack containing 36 Grace CPUs and 72 Blackwell GPUs connected over NVLink">
+  <img src="/images/hardware/nvl72-rack.png" alt="NVIDIA GB200 NVL72 rack" />
+</Frame>
+
+<CardGroup cols={2}>
+  <Card title="NVIDIA DGX SuperPOD (DGX GB200)">
+    <Frame>
+      <img src="/images/hardware/dgx-superpod.jpg" alt="NVIDIA DGX SuperPOD built on DGX GB200" />
+    </Frame>
+    Turnkey AI data-center platform built from DGX GB200 systems. This is the platform that houses Beta's 288 Blackwell GPUs.
+  </Card>
+  <Card title="NVIDIA Grace CPU Superchip">
+    <Frame>
+      <img src="/images/hardware/grace-cpu.jpg" alt="NVIDIA Grace CPU Superchip" />
+    </Frame>
+    CPU platform used for HPC and data-processing nodes alongside the GPU tier. Empire AI lists 60 Grace CPU Superchip nodes for those workloads.
+  </Card>
+  <Card title="VAST Data AI Operating System">
+    <Frame>
+      <img src="/images/hardware/vast.webp" alt="VAST Data storage system" />
+    </Frame>
+    **Tier 1 storage, 20+ PB.** All-flash platform designed for AI training pipelines and high-concurrency reads.
+  </Card>
+  <Card title="DDN data intelligence platform">
+    <Frame>
+      <img src="/images/hardware/ddn.webp" alt="DDN storage platform" />
+    </Frame>
+    **Tier 2 storage, 10+ PB.** Additional high-performance data infrastructure for datasets, checkpoints, and shared research workflows.
+  </Card>
+</CardGroup>
 
 ## Why the Blackwell stack matters
 

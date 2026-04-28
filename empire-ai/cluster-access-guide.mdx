@@ -43,7 +43,7 @@ Use the process below to move from proposal to active use.
 #!/bin/bash
 #SBATCH --job-name=empire-ai-job
 #SBATCH --partition=suny
-#SBATCH --gres=gpu:1
+#SBATCH --gpus-per-node=1
 #SBATCH --time=02:00:00
 
 module purge

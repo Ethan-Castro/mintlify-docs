@@ -42,7 +42,7 @@ HPCC uses a PI-driven registration system:
 
 ## Request an account
 
-Email **[HPCHelp@csi.cuny.edu](mailto:HPCHelp@csi.cuny.edu?subject=CSI%20HPCC%20account%20request)** — or register directly at the [HPCC web portal](https://hpchelp.csi.cuny.edu) — with the details below. **Use a valid CUNY email only** (Gmail, Hotmail, and other public mailers are filtered out).
+Email **[HPCHelp@csi.cuny.edu](mailto:HPCHelp@csi.cuny.edu?subject=CSI%20HPCC%20account%20request)** or open a request through the [HPCC ticket system](https://hpchelp.csi.cuny.edu) with the details below. **Use a valid CUNY email only** (Gmail, Hotmail, and other public mailers are filtered out).
 
 <CardGroup cols={2}>
   <Card title="Identity" icon="id-card">
@@ -52,7 +52,7 @@ Email **[HPCHelp@csi.cuny.edu](mailto:HPCHelp@csi.cuny.edu?subject=CSI%20HPCC%20
     Primary CUNY campus and department. Secondary affiliation (e.g. Graduate Center) if any.
   </Card>
   <Card title="PI / sponsor" icon="user-tie">
-    Name, department, and college of your PI — plus the **project code** they received.
+    Name, department, and college of your PI, plus the **project code** they received.
   </Card>
   <Card title="Project" icon="flask">
     Title, short description (up to 100 words), funding source, and relevant publications.
@@ -85,15 +85,15 @@ From the gateway, SSH into the system you want to use:
 ssh <your_username>@arrow
 ```
 
-The login banner (Message of the Day) often carries outage notices, maintenance windows, and policy reminders — read it every time you log in.
+The login banner (Message of the Day) often carries outage notices, maintenance windows, and policy reminders. Read it every time you log in.
 
 ### Logging in from Windows
 
-Windows 10 and 11 ship with OpenSSH — open **PowerShell** or **Windows Terminal** and use the same `ssh` command shown above. If you prefer a GUI:
+Windows 10 and 11 ship with OpenSSH. Open **PowerShell** or **Windows Terminal** and use the same `ssh` command shown above. If you prefer a GUI:
 
-- **PuTTY** — set **Host Name** to `chizen.csi.cuny.edu`, port `22`, and save the session for reuse.
-- **MobaXterm** — bundles SSH, SFTP, and an X server, which makes X11 forwarding painless.
-- **WinSCP** — for drag-and-drop file transfers once you're connecting successfully over SSH.
+- **PuTTY**: set **Host Name** to `chizen.csi.cuny.edu`, port `22`, and save the session for reuse.
+- **MobaXterm**: bundles SSH, SFTP, and an X server, which makes X11 forwarding painless.
+- **WinSCP**: for drag-and-drop file transfers once you're connecting successfully over SSH.
 
 ### X11 forwarding (running GUI apps)
 
@@ -102,12 +102,12 @@ Some tools (MATLAB, ParaView, `xterm`) open a graphical window. To forward the d
 ```bash
 ssh -Y <your_username>@chizen.csi.cuny.edu
 ssh -Y arrow
-xclock           # quick sanity check — a clock face should appear on your desktop
+xclock           # quick sanity check: a clock face should appear on your desktop
 ```
 
-- **macOS** — install [XQuartz](https://www.xquartz.org/), then log out and back in before using `-Y`.
-- **Windows** — use **MobaXterm** (X server built in) or install **VcXsrv**/**Xming** alongside PuTTY.
-- **Linux** — X is already running; `-Y` works out of the box.
+- **macOS**: install [XQuartz](https://www.xquartz.org/), then log out and back in before using `-Y`.
+- **Windows**: use **MobaXterm** (X server built in) or install **VcXsrv**/**Xming** alongside PuTTY.
+- **Linux**: X is already running; `-Y` works out of the box.
 
 Rendering large datasets over X11 is slow. For anything heavier than dialog boxes, prefer batch rendering to an image or copying results back to your laptop.
 
@@ -116,12 +116,12 @@ Rendering large datasets over X11 is slow. For anything heavier than dialog boxe
 Working through this short checklist resolves most login failures:
 
 - Are you using the correct username?
-- Are you typing the correct password? (Remember — passwords are case-sensitive.)
-- Which system are you trying to connect to? Only **Chizen** and **Karle** are reachable from outside the CSI network — for everything else, log into Chizen first and then SSH onward.
+- Are you typing the correct password? (Remember: passwords are case-sensitive.)
+- Which system are you trying to connect to? Only **Chizen** and **Karle** are reachable from outside the CSI network. For everything else, log into Chizen first and then SSH onward.
 - Do you have access to the system you're connecting to? Confirm the full hostname (`host@csi.cuny.edu`).
 
 <Warning>
-  If SSH ever refuses to connect with a **`REMOTE HOST IDENTIFICATION HAS CHANGED`** warning, it usually means the gateway was rebuilt after maintenance. Remove the stale key with `ssh-keygen -R chizen.csi.cuny.edu` and reconnect. If the warning persists, stop and email the helpline — don't blindly accept a new key.
+  If SSH ever refuses to connect with a **`REMOTE HOST IDENTIFICATION HAS CHANGED`** warning, it usually means the gateway was rebuilt after maintenance. Remove the stale key with `ssh-keygen -R chizen.csi.cuny.edu` and reconnect. If the warning persists, stop and email the helpline; don't blindly accept a new key.
 </Warning>
 
 If you're still stuck after that, [open a ticket](https://hpchelp.csi.cuny.edu) or email the helpline.
@@ -158,6 +158,6 @@ Change a password with the `passwd` command once logged in. If your password has
     End-to-end: log in, load a module, submit a Hello-SLURM job.
   </Card>
   <Card title="Learn the systems" icon="server" href="/systems">
-    What's available behind Chizen — Arrow and other clusters.
+    What's available behind Chizen, including Arrow and other clusters.
   </Card>
 </CardGroup>

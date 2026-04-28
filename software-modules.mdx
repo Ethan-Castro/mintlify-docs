@@ -1,12 +1,12 @@
 ---
 title: "Software & modules"
-description: "Load compilers, MPI, and applications with the LMOD environment module system."
+description: "Load compilers, MPI, and applications with the Lmod environment module system."
 ---
 
-CSI HPCC ships dozens of compilers, MPI libraries, math libraries, language runtimes, and applications. Rather than installing software system-wide in conflicting versions, the center uses **environment modules** — each package is described by a module file that sets `PATH`, `LD_LIBRARY_PATH`, and related variables when loaded, and cleanly reverses those changes when unloaded.
+CSI HPCC ships dozens of compilers, MPI libraries, math libraries, language runtimes, and applications. Rather than installing software system-wide in conflicting versions, the center uses **environment modules**. Each package is described by a module file that sets `PATH`, `LD_LIBRARY_PATH`, and related variables when loaded, and cleanly reverses those changes when unloaded.
 
 <Info>
-  Arrow uses **LMOD** (Lua-based, supports dependency hierarchies). The older Penzias and Appel servers use the **TCL**-based modules system, which has fewer features (no `module spider`, no automatic dependency resolution). The commands below target LMOD unless noted.
+  HPCC uses **Lmod** (Lua-based, supports dependency hierarchies) to manage application environments. The commands below target Lmod; always check the login banner and `module avail` on the system you're using.
 </Info>
 
 ## Core commands
@@ -29,10 +29,10 @@ Inspect what's loaded by default, then change it for your job:
 ```bash
 module list
 # Currently Loaded Modules (example):
-#   1) PrgEnv-cray/4.0.46    2) cce/15.0.1    3) xt-libsci
+#   1) gcc/12.3.0    2) openmpi/4.1.5
 
-module unload PrgEnv-cray
-module load PrgEnv-gnu
+module unload openmpi/4.1.5
+module load openmpi/4.1.6
 ```
 
 Search for a package and load a specific version:
@@ -61,20 +61,20 @@ python3 analysis.py
 ```
 
 <Tip>
-  Starting a script with `module purge` makes it reproducible — it doesn't matter what was loaded in the submitter's interactive shell.
+  Starting a script with `module purge` makes it reproducible. It doesn't matter what was loaded in the submitter's interactive shell.
 </Tip>
 
 ## What's available
 
 The module tree covers the usual HPC stack:
 
-- **Compilers:** GNU, Intel, Cray, NVIDIA (HPC SDK).
-- **MPI:** Cray MPICH, OpenMPI, Intel MPI (depending on the system).
+- **Compilers:** GNU, Intel / oneAPI, NVIDIA HPC SDK, and other system-specific toolchains.
+- **MPI:** OpenMPI, Intel MPI, and other system-specific MPI builds.
 - **Math / scientific libraries:** FFTW, NetCDF, HDF5, BLAS/LAPACK implementations.
 - **Languages:** Python (multiple versions), Julia, R, Perl.
 - **Applications:** MATLAB, and domain-specific codes as installed by HPCC staff.
 
-The exact versions available evolve over time — always check with `module avail` or `module spider` on the system you're using, not a memorized list.
+The exact versions available evolve over time. Always check with `module avail` or `module spider` on the system you're using, not a memorized list.
 
 ## Requesting new software
 
@@ -84,7 +84,7 @@ If a package you need isn't installed, email the [HPC Helpline](mailto:HPCHelp@c
 - A link to its install instructions or source.
 - Why you need it (a one-line justification is fine).
 
-For personal Python or Julia environments you can typically manage packages yourself inside your home directory — use `python -m venv`, `conda env create`, or Julia's package manager.
+For personal Python or Julia environments, you can typically manage packages yourself inside your home directory. Use `python -m venv`, `conda env create`, or Julia's package manager.
 
 ## Compiling your own code
 

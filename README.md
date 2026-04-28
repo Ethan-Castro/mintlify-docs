@@ -1,16 +1,6 @@
-# Mintlify Starter Kit
+# CSI HPCC documentation
 
-Use the starter kit to get your docs deployed and ready to customize.
-
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
-
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
-
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+This repository contains the Mintlify documentation site for the College of Staten Island High Performance Computing Center (CSI HPCC), including account access, storage, SLURM job submission, support, and Empire AI guidance.
 
 ## AI-assisted writing
 
@@ -22,7 +12,7 @@ npx skills add https://mintlify.com/docs
 
 This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
 
-See the [AI tools guides](/ai-tools) for tool-specific setup.
+See the `ai-tools/` guides for tool-specific setup.
 
 ## Development
 
@@ -42,7 +32,7 @@ View your local preview at `http://localhost:3000`.
 
 ## Publishing changes
 
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
+The site is deployed through Mintlify from this repository. Confirm the production branch and deployment settings in the Mintlify dashboard before publishing major changes.
 
 ## Need help?
 

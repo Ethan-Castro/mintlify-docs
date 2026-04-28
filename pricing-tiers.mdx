@@ -1,6 +1,6 @@
 ---
 title: "Pricing & access tiers"
-description: "How CSI HPCC allocates compute time — the MAP, CODP, LNP, and Condo models."
+description: "How CSI HPCC allocates compute time across the MAP, CODP, LNP, and Condo models."
 ---
 
 CSI HPCC operates on a cost-recovery model. Every user falls into one of four access plans that determine pricing, priority, and how compute time is purchased. Your PI or department typically selects the plan that fits the project budget and workload.
@@ -13,14 +13,14 @@ CSI HPCC operates on a cost-recovery model. Every user falls into one of four ac
 
 | Plan | Best for | Annual fee | Priority |
 | --- | --- | --- | --- |
-| **MAP** — Minimal Access Plan | PIs with ongoing but modest compute needs | $5k / $15k / $25k (Tier A/B/C) | Standard |
-| **CODP** — Compute on Demand Plan | Occasional or burst usage; no annual commitment | Pay per use | Standard |
-| **LNP** — Lease Node Plan | Groups needing guaranteed capacity for a period | Negotiated | High |
+| **MAP**: Minimal Access Plan | PIs with ongoing but modest compute needs | $5k / $15k / $25k (Tier A/B/C) | Standard |
+| **CODP**: Compute on Demand Plan | Occasional or burst usage; no annual commitment | Pay per use | Standard |
+| **LNP**: Lease Node Plan | Groups needing guaranteed capacity for a period | Negotiated | High |
 | **Condo** | Labs purchasing permanent dedicated hardware | Capital + maintenance | Highest |
 
 ---
 
-## MAP — Minimal Access Plan
+## MAP: Minimal Access Plan
 
 MAP is a yearly subscription that pre-purchases a block of compute time at a discounted rate. Three tiers are available:
 
@@ -41,7 +41,7 @@ MAP subscribers receive discounted rates versus CODP and are guaranteed capacity
 
 ---
 
-## CODP — Compute on Demand Plan
+## CODP: Compute on Demand Plan
 
 CODP has no annual commitment. You pay only for what you use, at a slightly higher rate than MAP.
 
@@ -58,9 +58,9 @@ CODP is well suited for:
 
 ---
 
-## LNP — Lease Node Plan
+## LNP: Lease Node Plan
 
-LNP provides exclusive access to one or more nodes for a negotiated period. Researchers pay a lease fee that covers reservation, power, cooling, and maintenance for the duration of the lease. Pricing depends on node type and duration — contact the Director for a quote.
+LNP provides exclusive access to one or more nodes for a negotiated period. Researchers pay a lease fee that covers reservation, power, cooling, and maintenance for the duration of the lease. Pricing depends on node type and duration; contact the Director for a quote.
 
 ---
 
@@ -75,13 +75,13 @@ Current condo partitions on Arrow:
 
 | Partition | Owner group | Notes |
 | --- | --- | --- |
-| `partchem` | Chemistry | No time limit on jobs; QOS `qoschem`. |
-| `partcfd` | CFD group | No time limit; QOS `qoscfd`. |
-| `partsym` | Symmetry / applied math | No time limit; QOS `qossym`. |
-| `partasrc` | ASRC / atmospheric sciences | No time limit; QOS `qosasrc`. |
-| `partphys` | Physics | No time limit; QOS `qosphys`. |
+| `partchem` | Chemistry | No time limit; GPU types listed as A100/80 and A30. |
+| `partcfd` | CFD group | No time limit; GPU type listed as A40. |
+| `partsym` | Symmetry / applied math | No time limit; GPU type listed as A30. |
+| `partasrc` | ASRC / atmospheric sciences | No time limit; GPU type listed as A30. |
+| `partphys` | Physics | No time limit; GPU type listed as L40. |
 
-Non-condo users can access condo nodes during idle periods through preemptible jobs — ask the helpline whether this applies to your project.
+Non-condo users can access condo nodes during idle periods through preemptible jobs. Ask the helpline whether this applies to your project.
 
 ---
 
@@ -91,9 +91,10 @@ All plans share the following general-access partitions:
 
 | Partition | Wall-clock limit | Notes |
 | --- | --- | --- |
-| `partnsf` | 240 hours | For NSF-funded projects; request requires approval. |
-| `partmatlabD` | Standard | MATLAB daytime partition. |
-| `partmatlabN` | Standard | MATLAB nighttime partition. |
+| `partnsf` | 240 hours | Advanced-tier partition with K20m, V100/16, and A100/40 GPUs listed by HPCC. |
+| `partmatlabD` | 240 hours | MATLAB daytime partition with V100/16 and A100/40 GPUs listed by HPCC. |
+| `partmatlabN` | 240 hours | MATLAB nighttime partition for CPU-only MATLAB work. |
+| `partdev` | 4 hours | Development and short test jobs on a 16-core node with 64 GB memory and 2 K20m GPUs. |
 
 ---
 
@@ -119,7 +120,7 @@ The default home directory quota is 50 GB / 10,000 files. To purchase additional
     Start with **CODP** to understand your usage, then move to **MAP Tier B or C** once you have a budget and know your compute demand. New MAP-B and MAP-C projects receive a block of free hours to get started.
   </Accordion>
   <Accordion title="I'm a student or postdoc with a shared PI allocation" icon="graduation-cap">
-    Your PI's MAP or CODP account covers your usage. You submit jobs under your own username, and hours are billed to the PI's project. You don't need your own plan — just an approved account.
+    Your PI's MAP or CODP account covers your usage. You submit jobs under your own username, and hours are billed to the PI's project. You don't need your own plan, just an approved account.
   </Accordion>
   <Accordion title="My lab runs 24/7 high-priority jobs" icon="server">
     Consider **LNP** (for a fixed period of exclusivity) or **Condo** (to permanently own your nodes). Both give higher scheduling priority and predictable capacity.

@@ -7,7 +7,7 @@ Every job on CSI HPCC is submitted through **SLURM**. This page collects annotat
 
 <Warning>
   **Three rules that apply to every job:**
-  1. Start from `/scratch/<username>` — **never** from `/global/u/<username>` (your home).
+  1. Start from `/scratch/<username>`, **never** from `/global/u/<username>` (your home).
   2. Use SLURM syntax. Older PBS Pro scripts must be converted.
   3. **Never run jobs on the login (head) node.** Any job found running there will be killed and the account may be suspended.
 </Warning>
@@ -35,42 +35,28 @@ srun ./your_program
 ```
 
 <Info>
-  Real jobs on HPCC typically need `--qos` and `--partition` matching your project (for example `--qos=qoschem --partition=partchem`). If you don't know which values to use, ask your PI or the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu) — those values are omitted from examples below so you can paste them in once.
+  Real jobs on HPCC typically need `--qos` and `--partition` matching your project (for example `--qos=qoschem --partition=partchem`). If you don't know which values to use, ask your PI or the [HPC Helpline](mailto:HPCHelp@csi.cuny.edu). Those values are omitted from examples below so you can paste them in once.
 </Info>
 
 ## Partitions and QOS
 
-Every job must name a partition (`--partition`) and a QOS (`--qos`). **Public partitions** are open to every project; **private partitions** are reserved for condo owners and their affiliated groups.
+Most production jobs must name a partition (`--partition`) and the QOS value assigned to your project (`--qos`). The current HPCC Wiki lists these operational partitions:
 
-### Public partitions
+| Partition | Max cores/job | Max jobs/user | Max cores/group | Wall-clock limit | Tier | GPU types listed by HPCC |
+| --- | --- | --- | --- | --- | --- | --- |
+| `partnsf` | 128 | 50 | 256 | 240 h | Advanced | K20m, V100/16, A100/40 |
+| `partchem` | 128 | 50 | 256 | No limit | Condo | A100/80, A30 |
+| `partcfd` | 96 | 50 | 96 | No limit | Condo | A40 |
+| `partsym` | 96 | 50 | 96 | No limit | Condo | A30 |
+| `partasrc` | 48 | 16 | 16 | No limit | Condo | A30 |
+| `partmatlabD` | 128 | 50 | 256 | 240 h | Advanced | V100/16, A100/40 |
+| `partmatlabN` | 384 | 50 | 384 | 240 h | Advanced | None |
+| `partphys` | 96 | 50 | 96 | No limit | Condo | L40 |
 
-| Partition | Max cores/job | Max jobs/user | Max cores/group | Wall-clock limit |
-| --- | --- | --- | --- | --- |
-| `production` | 128 | 50 | 256 | 240 h |
-| `partedu` | 16 | 2 | 216 | 72 h |
-| `partmath` | 128 | 128 | 128 | 240 h |
-| `partmatlab` | 1972 | 50 | 1972 | 240 h |
-| `partdev` | 16 | 16 | 16 | 4 h |
-
-`partdev` is the right place for compiling and short smoke tests — four-hour cap, but jobs start quickly. `partmatlab` is shared with the MATLAB daytime/nighttime QOS (`qosmatlabD` / `qosmatlabN`).
-
-### Private (condo) partitions
-
-Private partitions match a QOS on a 1-to-1 basis. Use them only if your PI's project has been granted access.
-
-| Partition | QOS | Owner group |
-| --- | --- | --- |
-| `partnsf` | `qosnsf` | NSF-funded projects |
-| `partchem` | `qoschem` | Chemistry |
-| `partmath` | `qosmath`, `qosmath_high` | Applied math |
-| `partcfd` | `qoscfd_high` | CFD |
-| `partphys` | `qosphys_high` | Physics |
-| `partsym` | `qossmhigh` | Symmetry / applied math |
-| `partasrc` | `qosasrchigh` | ASRC / atmospheric sciences |
-| `parteng` | `qoseng` | Engineering |
+`partdev` is dedicated to development. The HPCC Wiki describes it as available to all HPCC users with a four-hour time limit on a 16-core node with 64 GB memory and 2 K20m GPUs.
 
 <Tip>
-  Run `sinfo -s` to see which partitions are currently up, and `sacctmgr show assoc user=$USER format=Account,Partition,QOS` to confirm which QOS values your account is allowed to use.
+  Run `sinfo -s` to see which partitions are currently up, and `sacctmgr show assoc user=$USER format=Account,Partition,QOS` to confirm which partition and QOS values your account is allowed to use.
 </Tip>
 
 ### Submitting, watching, and cancelling
@@ -86,7 +72,7 @@ scontrol show job <jobid>           # everything SLURM knows about it
 
 ## Serial job (one core)
 
-The simplest case — one process, one core.
+The simplest case: one process, one core.
 
 ```bash serial.sh
 #!/bin/bash
@@ -178,7 +164,7 @@ The prototype above allocates 12 ranks per node × 2 nodes = **24 MPI ranks**, e
 
 ## GPU job
 
-Request GPUs with `--gres=gpu:<count>`. On Arrow, up to **8 GPUs per node** are available.
+Request GPUs with `--gres=gpu:<count>`. On Arrow, the HPCC Wiki lists GPU nodes ranging from 2 to 8 GPUs per node.
 
 ```bash gpu.sh
 #!/bin/bash
@@ -199,12 +185,12 @@ srun ./my_gpu_program
 
 ### GPU with a specific type
 
-Appel's `partnsf`, `partchem`, and `partmath` partitions host **mixed GPU types** (A30, A40, A100). Constrain on SKU, compute capability, or memory:
+Several partitions host different NVIDIA GPU types. Use `sinfo` to inspect the constraints currently advertised by the scheduler, then constrain your job only when the workload requires a specific GPU.
 
 ```bash
-#SBATCH --gres=gpu:1 --constraint='gpu_sku:V100'
-#SBATCH --gres=gpu:1 --constraint='gpu_cc:12.0'
-#SBATCH --gres=gpu:1 --constraint='gpu_mem:48GB'
+sinfo -o "%P %G %f"
+
+#SBATCH --gres=gpu:1 --constraint='gpu_sku:A100'
 ```
 
 ## Job array (parameter sweep)
@@ -235,7 +221,7 @@ This submits **6 jobs** (indices 0–5) sharing a single array job ID.
 
 ## Interactive debugging
 
-For quick, interactive access to a compute node (short sessions only — don't hold nodes idle):
+For quick, interactive access to a compute node (short sessions only; don't hold nodes idle):
 
 ```bash
 srun --pty --nodes=1 --ntasks=1 --cpus-per-task=4 --mem-per-cpu=4G --time=00:30:00 bash
@@ -247,10 +233,10 @@ Load modules and run commands as if you were on a compute node. Exit the shell t
 
 | Symptom | First thing to check |
 | --- | --- |
-| Job sits `PENDING` indefinitely | Run `squeue -j <jobid> -o "%i %T %r"` — the reason column explains why (priority, resources, QOS limit, etc.). |
+| Job sits `PENDING` indefinitely | Run `squeue -j <jobid> -o "%i %T %r"`; the reason column explains why (priority, resources, QOS limit, etc.). |
 | Job fails immediately with "invalid partition / QOS" | Your `--qos` or `--partition` values are wrong for your project. |
 | Job runs but crashes with no output | You launched from `/global/u`. Move to `/scratch/$USER` and resubmit. |
-| `srun: error: Unable to create TCP connection` | Usually a transient node issue — resubmit, or check with the helpline if it repeats. |
+| `srun: error: Unable to create TCP connection` | Usually a transient node issue; resubmit, or check with the helpline if it repeats. |
 | GPU allocated but program can't see it | Add `nvidia-smi` to your script to confirm, and make sure you `module load`ed the matching CUDA runtime. |
 
 Still stuck? Open a [ticket](https://hpchelp.csi.cuny.edu) with the job ID, the command you ran, and the contents of the `.out` and `.err` files. The FAQ on the [HPCC Wiki](https://wiki.csi.cuny.edu/cunyhpc/index.php/Main_Page) covers more edge cases.
