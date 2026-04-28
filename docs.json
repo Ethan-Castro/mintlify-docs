@@ -45,7 +45,8 @@
               "policies",
               "pricing-tiers",
               "faqs",
-              "changelog"
+              "changelog",
+              "authors"
             ]
           }
         ]
