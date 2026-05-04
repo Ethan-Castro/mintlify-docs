@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CSI Campus AI Governance Flow</title>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<style>
+  :root {
+    --bg:        #ffffff;
+    --surface:   #ffffff;
+    --surface-2: #f8fafc;
+    --border:    #e5e7eb;
+    --ink:       #0f172a;
+    --ink-2:     #334155;
+    --muted:     #64748b;
+    --accent:    #7abde8;
+    --accent-deep:#1f4f7a;
+    --success:   #16a34a;
+    --success-bg:#f0fdf4;
+    --warning:   #d97706;
+    --warning-bg:#fffbeb;
+    --danger:    #dc2626;
+    --danger-bg: #fef2f2;
+    --shadow:    0 1px 2px rgba(15,23,42,0.04), 0 4px 16px rgba(15,23,42,0.06);
+    --radius:    12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:        #0f111a;
+      --surface:   #131620;
+      --surface-2: #1e2132;
+      --border:    #2d3142;
+      --ink:       #f8fafc;
+      --ink-2:     #cbd5e1;
+      --muted:     #94a3b8;
+      --accent:    #38bdf8;
+      --accent-deep:#7dd3fc;
+      --success:   #4ade80;
+      --success-bg:rgba(74, 222, 128, 0.15);
+      --warning:   #fbbf24;
+      --warning-bg:rgba(251, 191, 36, 0.15);
+      --danger:    #f87171;
+      --danger-bg: rgba(248, 113, 113, 0.15);
+      --shadow:    0 4px 16px rgba(0,0,0,0.3);
+    }
+  }
+  
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", "Helvetica Neue", sans-serif;
+    color: var(--ink);
+    background: var(--surface-2);
+    font-size: 16px;
+    line-height: 1.45;
+    transition: background 300ms ease, color 300ms ease;
+  }
+
+  .app {
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    gap: 14px;
+    width: 100vw;
+    height: 100vh;
+    padding: 18px 22px;
+  }
+
+  header.bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  header.bar h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  header.bar h1 .sub {
+    color: var(--muted);
+    font-weight: 400;
+    margin-left: 8px;
+    font-size: 14px;
+  }
+
+  .canvas-wrap {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    min-height: 0;
+    transition: background 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
+  }
+  svg.flow {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .step-counter {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--ink-2);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 999px;
+    letter-spacing: 0.01em;
+    transition: background 300ms ease, border-color 300ms ease, color 300ms ease;
+  }
+
+  .narration {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 12px 18px;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 450;
+    transition: background 300ms ease, border-color 300ms ease, box-shadow 300ms ease, color 300ms ease;
+  }
+  .narration .label {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 12px;
+    white-space: nowrap;
+    transition: color 300ms ease;
+  }
+  .narration .text {
+    color: var(--ink);
+    transition: opacity 250ms ease, color 300ms ease;
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+  button.btn {
+    appearance: none;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: background 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 300ms ease;
+  }
+  button.btn:hover {
+    background: var(--surface-2);
+    border-color: var(--muted);
+  }
+  button.btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* SVG node styles */
+  .node-rect {
+    fill: var(--surface);
+    stroke: var(--border);
+    stroke-width: 1.5;
+    transition: fill 300ms ease, stroke 300ms ease;
+  }
+  .node-rect.active {
+    stroke: var(--accent);
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 6px var(--accent-bg));
+  }
+  .node-title {
+    fill: var(--ink);
+    font-size: 15px;
+    font-weight: 600;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    font-family: inherit;
+    transition: fill 300ms ease;
+  }
+  .node-sub {
+    fill: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    text-anchor: middle;
+    font-family: inherit;
+    transition: fill 300ms ease;
+  }
+  .stage-label {
+    fill: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: inherit;
+    transition: fill 300ms ease;
+  }
+  .edge {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 1.5;
+    transition: stroke 300ms ease, stroke-width 300ms ease;
+  }
+  .edge.active {
+    stroke: var(--accent);
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 4px var(--accent-bg));
+  }
+  .pill-rect {
+    fill: var(--surface);
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    transition: fill 300ms ease, stroke 300ms ease;
+  }
+  .pill-rect.filled {
+    fill: var(--accent);
+    stroke: var(--accent);
+  }
+  .pill-text {
+    fill: var(--ink);
+    font-size: 15px;
+    font-weight: 600;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    font-family: inherit;
+    transition: fill 300ms ease;
+  }
+  .pill-text.filled {
+    fill: #ffffff;
+  }
+  .forum-rect {
+    fill: var(--surface);
+    stroke: var(--accent-deep);
+    stroke-width: 2;
+    transition: fill 300ms ease, stroke 300ms ease;
+  }
+  .forum-title {
+    fill: var(--ink);
+    font-size: 16px;
+    font-weight: 700;
+    text-anchor: middle;
+    font-family: inherit;
+    transition: fill 300ms ease;
+  }
+  .forum-sub {
+    fill: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    text-anchor: middle;
+    font-family: inherit;
+    transition: fill 300ms ease;
+  }
+
+  .policy-rect.red    { fill: var(--danger-bg); stroke: var(--danger); stroke-width: 1.5; transition: fill 300ms ease, stroke 300ms ease; }
+  .policy-rect.yellow { fill: var(--warning-bg); stroke: var(--warning); stroke-width: 1.5; transition: fill 300ms ease, stroke 300ms ease; }
+  .policy-rect.green  { fill: var(--success-bg); stroke: var(--success); stroke-width: 1.5; transition: fill 300ms ease, stroke 300ms ease; }
+
+  .policy-icon { font-size: 28px; text-anchor: middle; dominant-baseline: middle; }
+  .policy-label {
+    fill: var(--ink);
+    font-size: 15px;
+    font-weight: 600;
+    text-anchor: middle;
+    font-family: inherit;
+    transition: fill 300ms ease;
+  }
+  .policy-count {
+    font-size: 12px;
+    font-weight: 500;
+    text-anchor: middle;
+    font-family: inherit;
+    transition: fill 300ms ease;
+  }
+  .policy-count.red    { fill: var(--danger); }
+  .policy-count.yellow { fill: var(--warning); }
+  .policy-count.green  { fill: var(--success); }
+
+  .fade { opacity: 0; transition: opacity 600ms ease; }
+  .fade.visible { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <h1>Campus AI governance<span class="sub">How CSI shaped its classroom AI policy</span></h1>
+  </header>
+
+  <div class="canvas-wrap">
+    <svg class="flow" id="flow" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid meet" aria-label="CSI campus AI governance flow diagram"></svg>
+    <div class="step-counter" id="stepCounter">Step 1 of 5</div>
+  </div>
+
+  <div class="narration" role="status" aria-live="polite">
+    <span class="label">Now</span>
+    <span class="text" id="narrationText">Four CSI groups &mdash; IT, the teaching center, faculty, and administrators &mdash; kick off the campus AI conversation.</span>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="pauseBtn" type="button">Pause</button>
+    <button class="btn" id="replayBtn" type="button">Replay</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const STAGES = [
+    { id: 1, title: "Four campus teams meet",
+      narration: "Four CSI groups — IT, the teaching center, faculty, and administrators — kick off the campus AI conversation." },
+    { id: 2, title: "They run a campus AI survey",
+      narration: "They run an AI survey to find out how people are actually using AI on campus." },
+    { id: 3, title: "Results feed into the AI Forum",
+      narration: "The survey results inform a campus-wide forum where the policy is debated." },
+    { id: 4, title: "Forum produces a traffic-light policy",
+      narration: "The forum produces a traffic-light policy: red prohibits AI, yellow restricts with citation, green allows it." },
+    { id: 5, title: "Policy lands in syllabi and classrooms",
+      narration: "Faculty translate the policy into syllabus guidance, which shapes how students use AI in class." }
+  ];
+  const TEAMS = [
+    { name: "ITS",            sub: "IT Services" },
+    { name: "CTLPD",          sub: "Teaching Center" },
+    { name: "Faculty",        sub: "Instructors" },
+    { name: "Administrators", sub: "Leadership" }
+  ];
+  const POLICY = [
+    { level: "red",    icon: "\u{1F6AB}", label: "Prohibited",                count: 12 },
+    { level: "yellow", icon: "⚠️", label: "Restricted with citation", count: 21 },
+    { level: "green",  icon: "✅",      label: "Allowed",                  count: 9  }
+  ];
+
+  const STAGE_MS = 5000;
+  const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const svg = d3.select("#flow");
+  const W = 1200, H = 700;
+
+  // ---------- LAYOUT ----------
+
+  const yTeams   = 110;
+  const ySurvey  = 280;
+  const yForum   = 420;
+  const yPolicy  = 580;
+
+  const teamW = 180, teamH = 78;
+  const teamGap = 40;
+  const totalTeamRow = TEAMS.length * teamW + (TEAMS.length - 1) * teamGap;
+  const teamX0 = (W - totalTeamRow) / 2;
+  const teamPositions = TEAMS.map((t, i) => ({
+    ...t,
+    x: teamX0 + i * (teamW + teamGap),
+    y: yTeams - teamH / 2,
+    cx: teamX0 + i * (teamW + teamGap) + teamW / 2,
+    cy: yTeams
+  }));
+
+  const surveyW = 280, surveyH = 56;
+  const surveyX = (W - surveyW) / 2;
+  const surveyY = ySurvey - surveyH / 2;
+  const surveyCx = W / 2;
+
+  const forumW = 360, forumH = 80;
+  const forumX = (W - forumW) / 2;
+  const forumY = yForum - forumH / 2;
+  const forumCx = W / 2;
+
+  const polW = 240, polH = 110;
+  const polGap = 50;
+  const totalPolRow = POLICY.length * polW + (POLICY.length - 1) * polGap;
+  const polX0 = (W - totalPolRow) / 2;
+  const policyPositions = POLICY.map((p, i) => ({
+    ...p,
+    x: polX0 + i * (polW + polGap),
+    y: yPolicy - polH / 2,
+    cx: polX0 + i * (polW + polGap) + polW / 2,
+    cy: yPolicy
+  }));
+
+  // ---------- DEFS (arrow marker for stage 5) ----------
+  const defs = svg.append("defs");
+  defs.append("marker")
+    .attr("id", "arrow-accent")
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 8)
+    .attr("refY", 0)
+    .attr("markerWidth", 8)
+    .attr("markerHeight", 8)
+    .attr("orient", "auto")
+    .append("path")
+    .attr("d", "M0,-5L10,0L0,5")
+    .attr("fill", "var(--accent)");
+
+  // ---------- LAYERS ----------
+  const gEdges  = svg.append("g").attr("class", "layer-edges");
+  const gNodes  = svg.append("g").attr("class", "layer-nodes");
+
+  // ===== Stage label (top) =====
+  gNodes.append("text")
+    .attr("class", "stage-label fade")
+    .attr("id", "label-teams")
+    .attr("x", W / 2)
+    .attr("y", 50)
+    .attr("text-anchor", "middle")
+    .text("Campus stakeholders");
+
+  // ===== Stage 1: Team cards =====
+  const gTeams = gNodes.append("g").attr("class", "g-teams");
+  const teamSel = gTeams.selectAll("g.team")
+    .data(teamPositions)
+    .enter()
+    .append("g")
+    .attr("class", "team fade")
+    .attr("transform", d => `translate(${d.x},${d.y})`);
+
+  teamSel.append("rect")
+    .attr("class", "node-rect")
+    .attr("width", teamW)
+    .attr("height", teamH)
+    .attr("rx", 12)
+    .attr("ry", 12);
+
+  teamSel.append("text")
+    .attr("class", "node-title")
+    .attr("x", teamW / 2)
+    .attr("y", teamH / 2 - 8)
+    .text(d => d.name);
+
+  teamSel.append("text")
+    .attr("class", "node-sub")
+    .attr("x", teamW / 2)
+    .attr("y", teamH / 2 + 14)
+    .text(d => d.sub);
+
+  // ===== Stage 2: Survey edges + Survey pill =====
+  const gSurveyEdges = gEdges.append("g").attr("class", "g-survey-edges");
+  teamPositions.forEach((t, i) => {
+    const x1 = t.cx;
+    const y1 = t.y + teamH;
+    const x2 = surveyCx;
+    const y2 = surveyY;
+    const path = `M${x1},${y1} C ${x1},${(y1 + y2) / 2} ${x2},${(y1 + y2) / 2} ${x2},${y2}`;
+    gSurveyEdges.append("path")
+      .attr("class", "edge fade")
+      .attr("id", `edge-team-${i}`)
+      .attr("d", path);
+  });
+
+  const gSurvey = gNodes.append("g")
+    .attr("class", "g-survey fade")
+    .attr("id", "g-survey")
+    .attr("transform", `translate(${surveyX},${surveyY})`);
+
+  gSurvey.append("rect")
+    .attr("class", "pill-rect")
+    .attr("width", surveyW)
+    .attr("height", surveyH)
+    .attr("rx", surveyH / 2)
+    .attr("ry", surveyH / 2);
+
+  gSurvey.append("text")
+    .attr("class", "pill-text")
+    .attr("x", surveyW / 2)
+    .attr("y", surveyH / 2)
+    .text("Campus AI survey");
+
+  // ===== Stage 3: Forum card =====
+  gEdges.append("path")
+    .attr("class", "edge fade")
+    .attr("id", "edge-survey-forum")
+    .attr("d", `M${surveyCx},${surveyY + surveyH} L${forumCx},${forumY}`);
+
+  const gForum = gNodes.append("g")
+    .attr("class", "g-forum fade")
+    .attr("id", "g-forum")
+    .attr("transform", `translate(${forumX},${forumY})`);
+
+  gForum.append("rect")
+    .attr("class", "forum-rect")
+    .attr("width", forumW)
+    .attr("height", forumH)
+    .attr("rx", 12)
+    .attr("ry", 12);
+
+  gForum.append("text")
+    .attr("class", "forum-title")
+    .attr("x", forumW / 2)
+    .attr("y", forumH / 2 - 4)
+    .text("Campus AI Forum");
+
+  gForum.append("text")
+    .attr("class", "forum-sub")
+    .attr("x", forumW / 2)
+    .attr("y", forumH / 2 + 18)
+    .text("Open debate on classroom AI policy");
+
+  // ===== Stage 4: Policy cards =====
+  const gPolicyEdges = gEdges.append("g").attr("class", "g-policy-edges");
+  policyPositions.forEach((p, i) => {
+    const x1 = forumCx;
+    const y1 = forumY + forumH;
+    const x2 = p.cx;
+    const y2 = p.y;
+    const path = `M${x1},${y1} C ${x1},${(y1 + y2) / 2} ${x2},${(y1 + y2) / 2} ${x2},${y2}`;
+    gPolicyEdges.append("path")
+      .attr("class", "edge fade")
+      .attr("id", `edge-policy-${i}`)
+      .attr("d", path);
+  });
+
+  const gPolicy = gNodes.append("g").attr("class", "g-policy");
+  const polSel = gPolicy.selectAll("g.policy")
+    .data(policyPositions)
+    .enter()
+    .append("g")
+    .attr("class", d => `policy fade policy-${d.level}`)
+    .attr("id", d => `g-policy-${d.level}`)
+    .attr("transform", d => `translate(${d.x},${d.y})`);
+
+  polSel.append("rect")
+    .attr("class", d => `policy-rect ${d.level}`)
+    .attr("width", polW)
+    .attr("height", polH)
+    .attr("rx", 12)
+    .attr("ry", 12);
+
+  polSel.append("text")
+    .attr("class", "policy-icon")
+    .attr("x", polW / 2)
+    .attr("y", 36)
+    .text(d => d.icon);
+
+  polSel.append("text")
+    .attr("class", "policy-label")
+    .attr("x", polW / 2)
+    .attr("y", 72)
+    .text(d => d.label);
+
+  polSel.append("text")
+    .attr("class", d => `policy-count ${d.level}`)
+    .attr("x", polW / 2)
+    .attr("y", 94)
+    .text(d => `${d.count} courses`);
+
+  // ===== Stage 5: alternate compact layout =====
+  // We replace the diagram with a clear two-step funnel for stage 5,
+  // because the full chain doesn't fit alongside students at 700px.
+  const gStage5 = gNodes.append("g").attr("class", "g-stage5 fade").attr("id", "g-stage5");
+
+  gStage5.append("text")
+    .attr("class", "stage-label")
+    .attr("x", W / 2)
+    .attr("y", 50)
+    .attr("text-anchor", "middle")
+    .text("From policy to classroom practice");
+
+  const chipW = 200, chipH = 50;
+  const chipGap = 32;
+  const chipsTotal = POLICY.length * chipW + (POLICY.length - 1) * chipGap;
+  const chipX0 = (W - chipsTotal) / 2;
+  const chipY  = 110;
+
+  const sylW = 360, sylH = 90;
+  const sylX = (W - sylW) / 2;
+  const sylY = 320;
+  const sylCx = W / 2;
+
+  const stuW = 360, stuH = 110;
+  const stuX = (W - stuW) / 2;
+  const stuY = 510;
+
+  // Edges: each chip -> syllabus
+  POLICY.forEach((p, i) => {
+    const cx = chipX0 + i * (chipW + chipGap) + chipW / 2;
+    const x1 = cx;
+    const y1 = chipY + chipH;
+    const x2 = sylCx;
+    const y2 = sylY;
+    const path = `M${x1},${y1} C ${x1},${(y1 + y2) / 2} ${x2},${(y1 + y2) / 2} ${x2},${y2}`;
+    gStage5.append("path")
+      .attr("class", "edge active")
+      .attr("d", path);
+  });
+
+  // Chips
+  POLICY.forEach((p, i) => {
+    const g = gStage5.append("g")
+      .attr("transform", `translate(${chipX0 + i * (chipW + chipGap)},${chipY})`);
+    g.append("rect")
+      .attr("class", `policy-rect ${p.level}`)
+      .attr("width", chipW)
+      .attr("height", chipH)
+      .attr("rx", 25)
+      .attr("ry", 25);
+    g.append("text")
+      .attr("class", "policy-icon")
+      .style("font-size", "18px")
+      .attr("x", 28)
+      .attr("y", chipH / 2 + 1)
+      .text(p.icon);
+    g.append("text")
+      .attr("class", "policy-label")
+      .attr("x", chipW / 2 + 12)
+      .attr("y", chipH / 2 + 5)
+      .style("font-size", "14px")
+      .text(p.label);
+  });
+
+  // Syllabus card
+  const gS5Syl = gStage5.append("g")
+    .attr("transform", `translate(${sylX},${sylY})`);
+  gS5Syl.append("rect")
+    .attr("class", "node-rect active")
+    .attr("width", sylW)
+    .attr("height", sylH)
+    .attr("rx", 12)
+    .attr("ry", 12);
+  gS5Syl.append("text")
+    .attr("class", "node-title")
+    .attr("x", sylW / 2)
+    .attr("y", sylH / 2 - 10)
+    .style("font-size", "17px")
+    .text("Syllabus guidance");
+  gS5Syl.append("text")
+    .attr("class", "node-sub")
+    .attr("x", sylW / 2)
+    .attr("y", sylH / 2 + 14)
+    .text("Per-course AI rules written into the syllabus");
+
+  // Arrow syllabus -> students
+  gStage5.append("path")
+    .attr("class", "edge active")
+    .attr("d", `M${W/2},${sylY + sylH} L${W/2},${stuY - 4}`)
+    .attr("marker-end", "url(#arrow-accent)");
+
+  // Students card
+  const gS5Stu = gStage5.append("g")
+    .attr("transform", `translate(${stuX},${stuY})`);
+  gS5Stu.append("rect")
+    .attr("class", "node-rect active")
+    .attr("width", stuW)
+    .attr("height", stuH)
+    .attr("rx", 12)
+    .attr("ry", 12);
+  gS5Stu.append("text")
+    .attr("class", "node-title")
+    .attr("x", stuW / 2)
+    .attr("y", stuH / 2 - 18)
+    .style("font-size", "17px")
+    .text("Student classroom use");
+  gS5Stu.append("text")
+    .attr("class", "node-sub")
+    .attr("x", stuW / 2)
+    .attr("y", stuH / 2 + 6)
+    .text("Students follow the AI rule for their course");
+  gS5Stu.append("text")
+    .attr("class", "node-sub")
+    .attr("x", stuW / 2)
+    .attr("y", stuH / 2 + 28)
+    .text("ITS, CTLPD, faculty + admins keep iterating");
+
+  // ---------- STAGE CONTROL ----------
+
+  function show(sel) { sel.classed("visible", true); }
+  function hide(sel) { sel.classed("visible", false); }
+  function setActiveRects(sel, on) {
+    sel.selectAll("rect.node-rect").classed("active", !!on);
+  }
+
+  function applyStage(idx) {
+    if (idx < 4) {
+      hide(d3.select("#g-stage5"));
+      show(d3.select("#label-teams"));
+
+      // Stage 1: teams (always visible from stage 1 onward through stage 4)
+      show(d3.selectAll("g.team"));
+      setActiveRects(d3.selectAll("g.team"), idx === 0);
+
+      // Stage 2
+      if (idx >= 1) {
+        for (let i = 0; i < TEAMS.length; i++) show(d3.select(`#edge-team-${i}`));
+        show(d3.select("#g-survey"));
+      } else {
+        for (let i = 0; i < TEAMS.length; i++) hide(d3.select(`#edge-team-${i}`));
+        hide(d3.select("#g-survey"));
+      }
+
+      // Stage 3
+      if (idx >= 2) {
+        show(d3.select("#edge-survey-forum"));
+        show(d3.select("#g-forum"));
+      } else {
+        hide(d3.select("#edge-survey-forum"));
+        hide(d3.select("#g-forum"));
+      }
+
+      // Stage 4
+      if (idx >= 3) {
+        for (let i = 0; i < POLICY.length; i++) show(d3.select(`#edge-policy-${i}`));
+        show(d3.selectAll("g.policy"));
+      } else {
+        for (let i = 0; i < POLICY.length; i++) hide(d3.select(`#edge-policy-${i}`));
+        hide(d3.selectAll("g.policy"));
+      }
+    } else {
+      // Stage 5: swap to compact funnel layout
+      d3.selectAll(".fade").classed("visible", false);
+      show(d3.select("#g-stage5"));
+    }
+
+    const stage = STAGES[idx];
+    document.getElementById("stepCounter").textContent = `Step ${stage.id} of ${STAGES.length}`;
+
+    const nText = document.getElementById("narrationText");
+    if (reducedMotion) {
+      nText.textContent = stage.narration;
+    } else {
+      nText.style.opacity = 0;
+      window.setTimeout(() => {
+        nText.textContent = stage.narration;
+        nText.style.opacity = 1;
+      }, 180);
+    }
+  }
+
+  // ---------- TIMELINE ----------
+  let currentStage = 0;
+  let timer = null;
+  let paused = false;
+
+  function start() {
+    stopTimer();
+    currentStage = 0;
+    applyStage(0);
+    scheduleNext();
+  }
+
+  function scheduleNext() {
+    stopTimer();
+    if (paused) return;
+    timer = window.setTimeout(() => {
+      if (currentStage < STAGES.length - 1) {
+        currentStage += 1;
+        applyStage(currentStage);
+        scheduleNext();
+      }
+    }, STAGE_MS);
+  }
+
+  function stopTimer() {
+    if (timer != null) {
+      window.clearTimeout(timer);
+      timer = null;
+    }
+  }
+
+  // ---------- CONTROLS ----------
+  const pauseBtn = document.getElementById("pauseBtn");
+  const replayBtn = document.getElementById("replayBtn");
+
+  pauseBtn.addEventListener("click", () => {
+    paused = !paused;
+    if (paused) {
+      stopTimer();
+      pauseBtn.textContent = "Resume";
+    } else {
+      pauseBtn.textContent = "Pause";
+      if (currentStage < STAGES.length - 1) {
+        scheduleNext();
+      }
+    }
+  });
+
+  replayBtn.addEventListener("click", () => {
+    paused = false;
+    pauseBtn.textContent = "Pause";
+    start();
+  });
+
+  // ---------- KICK OFF ----------
+  start();
+})();
+</script>
+</body>
+</html>

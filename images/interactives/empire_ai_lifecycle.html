@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How an Empire AI project gets from idea to training</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f8fafc;
+    --border: #e5e7eb;
+    --ink: #0f172a;
+    --ink-2: #334155;
+    --muted: #64748b;
+    --accent: #7abde8;
+    --accent-bg: #f0f9ff;
+    --accent-deep: #1f4f7a;
+    --empire: #b88aff;
+    --success: #16a34a;
+    --shadow: 0 1px 2px rgba(15,23,42,0.04), 0 4px 16px rgba(15,23,42,0.06);
+    --radius: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f111a;
+      --surface: #131620;
+      --surface-2: #1e2132;
+      --border: #2d3142;
+      --ink: #f8fafc;
+      --ink-2: #cbd5e1;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-bg: rgba(56, 189, 248, 0.15);
+      --accent-deep: #7dd3fc;
+      --empire: #c084fc;
+      --success: #4ade80;
+      --shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    transition: background 300ms ease, color 300ms ease;
+  }
+  .frame {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 20px 24px 28px 24px;
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 18px;
+    transition: border-color 300ms ease;
+  }
+  .title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    transition: color 300ms ease;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 2px;
+    transition: color 300ms ease;
+  }
+  .controls {
+    display: flex;
+    gap: 8px;
+  }
+  .btn {
+    appearance: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 13px;
+    color: var(--ink-2);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 120ms, border-color 120ms, color 120ms;
+  }
+  .btn:hover { background: var(--surface-2); border-color: var(--accent); color: var(--ink); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .timeline-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 28px 32px 16px 32px;
+    margin-bottom: 18px;
+    transition: background 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
+  }
+  .timeline-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    transition: color 300ms ease;
+  }
+  svg.timeline { display: block; width: 100%; height: 150px; }
+
+  .stage-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px 24px;
+    min-height: 170px;
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+    transition: background 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
+  }
+  .stage-card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--accent);
+    transition: background 300ms ease;
+  }
+  .stage-eyebrow {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 500;
+    transition: color 300ms ease;
+  }
+  .stage-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 4px 0 8px 0;
+    letter-spacing: -0.01em;
+    transition: color 300ms ease;
+  }
+  .stage-desc {
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink-2);
+    margin: 0 0 14px 0;
+    max-width: 760px;
+    transition: color 300ms ease;
+  }
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 11px;
+    font-size: 13px;
+    color: var(--ink-2);
+    transition: background 300ms ease, border-color 300ms ease, color 300ms ease;
+  }
+  .badge .glyph {
+    width: 14px; height: 14px;
+    display: inline-block;
+    color: var(--accent-deep);
+    transition: color 300ms ease;
+  }
+  .fade { transition: opacity 250ms ease; }
+  .fade.hidden { opacity: 0; }
+
+  .chart-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 24px 22px 24px;
+    transition: opacity 350ms ease, background 300ms ease, border-color 300ms ease;
+  }
+  .chart-wrap.dim { opacity: 0.45; }
+  .chart-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 2px;
+    transition: color 300ms ease;
+  }
+  .chart-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    transition: color 300ms ease;
+  }
+  svg.chart { display: block; width: 100%; height: 180px; }
+
+  /* Timeline element styling */
+  .tl-line { stroke: var(--border); stroke-width: 2; transition: stroke 300ms ease; }
+  .tl-fill { stroke: var(--accent); stroke-width: 3; transition: stroke-dashoffset 600ms ease, stroke 300ms ease; }
+  .tl-dot { fill: var(--surface); stroke: var(--border); stroke-width: 2; transition: fill 250ms, stroke 250ms, r 250ms; }
+  .tl-dot.done { fill: var(--accent); stroke: var(--accent); }
+  .tl-dot.current { fill: var(--accent-deep); stroke: var(--accent-deep); filter: drop-shadow(0 0 6px var(--accent-bg)); }
+  .tl-halo { fill: none; stroke: var(--accent); stroke-width: 2; opacity: 0; transition: opacity 250ms; transform-box: fill-box; transform-origin: center; }
+  .tl-halo.on { opacity: 0.55; }
+  .tl-halo.pulse { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse {
+    0%   { opacity: 0.55; transform: scale(1); }
+    50%  { opacity: 0.15; transform: scale(1.35); }
+    100% { opacity: 0.55; transform: scale(1); }
+  }
+  .tl-num {
+    font-size: 11px;
+    font-weight: 600;
+    fill: var(--muted);
+    text-anchor: middle;
+    transition: fill 250ms;
+  }
+  .tl-num.done { fill: var(--accent-deep); }
+  .tl-num.current { fill: var(--ink); }
+  .tl-label {
+    font-size: 11.5px;
+    fill: var(--muted);
+    text-anchor: end;
+    font-weight: 500;
+    transition: fill 250ms;
+  }
+  .tl-label.current { fill: var(--ink); font-weight: 700; }
+
+  /* Chart styling */
+  .ch-axis { stroke: var(--border); stroke-width: 1; transition: stroke 300ms ease; }
+  .ch-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 4; opacity: 0.6; transition: stroke 300ms ease; }
+  .ch-tick { font-size: 11px; fill: var(--muted); transition: fill 300ms ease; }
+  .ch-line { fill: none; stroke: var(--empire); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 300ms ease; filter: drop-shadow(0 0 4px var(--accent-bg)); }
+  .ch-pt { fill: var(--surface); stroke: var(--empire); stroke-width: 2.5; transition: fill 300ms ease, stroke 300ms ease; }
+  .ch-label { font-size: 11px; fill: var(--ink-2); font-weight: 500; transition: fill 300ms ease; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fade { transition: none; }
+    .tl-fill { transition: none; }
+    .tl-dot, .tl-halo, .tl-num, .tl-label { transition: none; }
+    .tl-halo.pulse { animation: none; }
+    .ch-line, .ch-pt { transition: none; filter: none; }
+  }
+</style>
+</head>
+<body>
+<div class="frame" role="application" aria-label="Empire AI project lifecycle explainer">
+
+  <div class="header">
+    <div>
+      <div class="title">How an Empire AI project gets from idea to training</div>
+      <div class="subtitle">A 50-second walkthrough of the ten stages from proposal to monitoring.</div>
+    </div>
+    <div class="controls">
+      <button id="btn-pause" class="btn" type="button" aria-label="Pause animation">Pause</button>
+      <button id="btn-replay" class="btn" type="button" aria-label="Replay animation">Replay</button>
+    </div>
+  </div>
+
+  <div class="timeline-wrap" aria-hidden="true">
+    <div class="timeline-meta">
+      <span>Day 0</span>
+      <span>Stages 1 - 10</span>
+      <span>Day 84</span>
+    </div>
+    <svg class="timeline" id="timeline" viewBox="0 0 1000 150" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+
+  <div class="stage-card" aria-live="polite">
+    <div class="stage-eyebrow" id="stage-eyebrow">Stage 1 of 10 &middot; Day 0</div>
+    <h2 class="stage-title fade" id="stage-title">Proposal submitted</h2>
+    <p class="stage-desc fade" id="stage-desc">You write a Work Order Request describing your project, the public-good motivation, and the compute and storage you'll need.</p>
+    <div class="badges fade" id="stage-badges"></div>
+  </div>
+
+  <div class="chart-wrap dim" id="chart-wrap" aria-hidden="true">
+    <div class="chart-title">Training metrics</div>
+    <div class="chart-sub" id="chart-sub">Revealed during stage 9 (Model training).</div>
+    <svg class="chart" id="chart" viewBox="0 0 1000 180" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Content ----------
+  var STAGES = [
+    { day: 0,  title: "Proposal submitted",
+      description: "You write a Work Order Request describing your project, the public-good motivation, and the compute and storage you'll need.",
+      duration: "1 day", people: "you, your PI" },
+    { day: 7,  title: "Campus review",
+      description: "Your home institution reads the proposal and confirms it makes sense for the campus.",
+      duration: "1-2 weeks", people: "campus committee" },
+    { day: 21, title: "Institutional umbrella review",
+      description: "The Empire AI consortium reviews approved proposals together, balances demand across institutions, and decides who gets time.",
+      duration: "2-3 weeks", people: "consortium board" },
+    { day: 35, title: "Allocation awarded",
+      description: "Your project is granted a Service Unit budget — that's the currency that pays for compute, storage, and GPU time.",
+      duration: "instant", people: "Empire AI Support" },
+    { day: 42, title: "Alpha+ onboarding",
+      description: "CCR Support creates your account and walks you through ColdFront, the first SSH login, and how to mount your project storage.",
+      duration: "3-5 days", people: "you, CCR Support" },
+    { day: 49, title: "Data transfer",
+      description: "You move your training data from your home institution to Empire AI storage. Most teams use Globus.",
+      duration: "1-7 days (data size)", people: "you" },
+    { day: 56, title: "Container / ARM64 prep",
+      description: "Beta nodes use ARM64 CPUs (NVIDIA Grace), so you containerize your workflow and rebuild any binaries that were x86-only.",
+      duration: "1-2 weeks", people: "you, CCR Support if stuck" },
+    { day: 70, title: "Beta-ready workflow",
+      description: "Your pipeline now runs on either Alpha+ or Beta. You can scale up confidently.",
+      duration: "instant", people: "you" },
+    { day: 77, title: "Model training",
+      description: "Training runs at full scale. Loss starts dropping; throughput stabilizes.",
+      duration: "days to weeks", people: "you" },
+    { day: 84, title: "Monitoring + fairshare check",
+      description: "Empire AI checks that your usage matches the allocation and that fairshare across the consortium stays balanced.",
+      duration: "ongoing", people: "Empire AI ops" }
+  ];
+
+  var TRAINING_LOSS = [
+    { epoch: 1, loss: 2.20 },
+    { epoch: 2, loss: 1.64 },
+    { epoch: 3, loss: 1.28 },
+    { epoch: 4, loss: 1.03 }
+  ];
+
+  // ---------- Validation ----------
+  for (var vi = 1; vi < STAGES.length; vi++) {
+    if (!(STAGES[vi].day > STAGES[vi - 1].day)) {
+      throw new Error(
+        "STAGES validation failed: day values must be strictly increasing. " +
+        "Stage " + (vi + 1) + " (\"" + STAGES[vi].title + "\", day " + STAGES[vi].day + ") " +
+        "is not greater than stage " + vi + " (\"" + STAGES[vi - 1].title + "\", day " + STAGES[vi - 1].day + ")."
+      );
+    }
+  }
+  for (var vj = 1; vj < TRAINING_LOSS.length; vj++) {
+    if (!(TRAINING_LOSS[vj].epoch > TRAINING_LOSS[vj - 1].epoch)) {
+      throw new Error(
+        "TRAINING_LOSS validation failed: epoch values must be strictly increasing. " +
+        "Index " + vj + " (epoch " + TRAINING_LOSS[vj].epoch + ") " +
+        "is not greater than index " + (vj - 1) + " (epoch " + TRAINING_LOSS[vj - 1].epoch + ")."
+      );
+    }
+  }
+
+  // ---------- SVG helpers ----------
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  function svgEl(tag, attrs) {
+    var el = document.createElementNS(SVG_NS, tag);
+    for (var k in attrs) {
+      if (Object.prototype.hasOwnProperty.call(attrs, k)) el.setAttribute(k, attrs[k]);
+    }
+    return el;
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (ch) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch];
+    });
+  }
+
+  // ---------- Build timeline SVG ----------
+  var timelineSvg = document.getElementById("timeline");
+  var TL_W = 1000;
+  var PAD_L = 40, PAD_R = 40;
+  var Y_LINE = 50;
+  var N = STAGES.length;
+  function stageX(i) { return PAD_L + (TL_W - PAD_L - PAD_R) * (i / (N - 1)); }
+
+  // base line
+  timelineSvg.appendChild(svgEl("line", {
+    "class": "tl-line",
+    x1: stageX(0), y1: Y_LINE, x2: stageX(N - 1), y2: Y_LINE
+  }));
+
+  // progress fill
+  var TL_LEN = stageX(N - 1) - stageX(0);
+  var fillLine = svgEl("line", {
+    "class": "tl-fill",
+    x1: stageX(0), y1: Y_LINE, x2: stageX(N - 1), y2: Y_LINE,
+    "stroke-dasharray": TL_LEN + " " + TL_LEN,
+    "stroke-dashoffset": TL_LEN
+  });
+  timelineSvg.appendChild(fillLine);
+
+  var dotEls = [];
+  var numEls = [];
+  var labelEls = [];
+  var haloEls = [];
+
+  for (var i = 0; i < STAGES.length; i++) {
+    (function (i) {
+      var s = STAGES[i];
+      var x = stageX(i);
+
+      var halo = svgEl("circle", { "class": "tl-halo", cx: x, cy: Y_LINE, r: 14 });
+      timelineSvg.appendChild(halo);
+      haloEls.push(halo);
+
+      var d = svgEl("circle", { "class": "tl-dot", cx: x, cy: Y_LINE, r: 7 });
+      timelineSvg.appendChild(d);
+      dotEls.push(d);
+
+      var n = svgEl("text", { "class": "tl-num", x: x, y: Y_LINE - 14 });
+      n.textContent = String(i + 1);
+      timelineSvg.appendChild(n);
+      numEls.push(n);
+
+      var lbl = svgEl("text", {
+        "class": "tl-label",
+        x: x, y: Y_LINE + 22,
+        transform: "rotate(-30 " + x + " " + (Y_LINE + 22) + ")"
+      });
+      lbl.textContent = s.title;
+      timelineSvg.appendChild(lbl);
+      labelEls.push(lbl);
+    })(i);
+  }
+
+  // ---------- Build chart SVG ----------
+  var chartSvg = document.getElementById("chart");
+  var CH_W = 1000, CH_H = 180;
+  var CH_PAD_L = 56, CH_PAD_R = 24, CH_PAD_T = 14, CH_PAD_B = 34;
+  var lossMin = 0.8, lossMax = 2.4;
+  var epochMin = 1, epochMax = 4;
+  function xAt(e) { return CH_PAD_L + (CH_W - CH_PAD_L - CH_PAD_R) * ((e - epochMin) / (epochMax - epochMin)); }
+  function yAt(l) { return CH_PAD_T + (CH_H - CH_PAD_T - CH_PAD_B) * (1 - (l - lossMin) / (lossMax - lossMin)); }
+
+  var gridVals = [1.0, 1.5, 2.0];
+  for (var gi = 0; gi < gridVals.length; gi++) {
+    var g = gridVals[gi];
+    chartSvg.appendChild(svgEl("line", {
+      "class": "ch-grid",
+      x1: CH_PAD_L, x2: CH_W - CH_PAD_R, y1: yAt(g), y2: yAt(g)
+    }));
+    var t = svgEl("text", { "class": "ch-tick", x: CH_PAD_L - 8, y: yAt(g) + 4, "text-anchor": "end" });
+    t.textContent = g.toFixed(1);
+    chartSvg.appendChild(t);
+  }
+  var yLab = svgEl("text", { "class": "ch-tick", x: 14, y: CH_PAD_T + 14, "text-anchor": "start" });
+  yLab.textContent = "Loss";
+  chartSvg.appendChild(yLab);
+
+  chartSvg.appendChild(svgEl("line", {
+    "class": "ch-axis",
+    x1: CH_PAD_L, x2: CH_W - CH_PAD_R, y1: yAt(lossMin), y2: yAt(lossMin)
+  }));
+  for (var ti = 0; ti < TRAINING_LOSS.length; ti++) {
+    var p = TRAINING_LOSS[ti];
+    var tx = svgEl("text", { "class": "ch-tick", x: xAt(p.epoch), y: yAt(lossMin) + 18, "text-anchor": "middle" });
+    tx.textContent = "Epoch " + p.epoch;
+    chartSvg.appendChild(tx);
+  }
+
+  var chartPath = svgEl("path", { "class": "ch-line", d: "" });
+  chartSvg.appendChild(chartPath);
+
+  var ptEls = [];
+  for (var pi = 0; pi < TRAINING_LOSS.length; pi++) {
+    var pp = TRAINING_LOSS[pi];
+    var c = svgEl("circle", { "class": "ch-pt", cx: xAt(pp.epoch), cy: yAt(pp.loss), r: 5, opacity: 0 });
+    chartSvg.appendChild(c);
+    var clbl = svgEl("text", { "class": "ch-label", x: xAt(pp.epoch) + 10, y: yAt(pp.loss) - 8, opacity: 0 });
+    clbl.textContent = pp.loss.toFixed(2);
+    chartSvg.appendChild(clbl);
+    ptEls.push({ dot: c, label: clbl });
+  }
+
+  function smoothPath(pts) {
+    if (pts.length === 0) return "";
+    if (pts.length === 1) return "M " + pts[0].x + " " + pts[0].y;
+    var d = "M " + pts[0].x + " " + pts[0].y;
+    for (var i = 0; i < pts.length - 1; i++) {
+      var p0 = pts[i - 1] || pts[i];
+      var p1 = pts[i];
+      var p2 = pts[i + 1];
+      var p3 = pts[i + 2] || p2;
+      var t = 0.18;
+      var c1x = p1.x + (p2.x - p0.x) * t;
+      var c1y = p1.y + (p2.y - p0.y) * t;
+      var c2x = p2.x - (p3.x - p1.x) * t;
+      var c2y = p2.y - (p3.y - p1.y) * t;
+      d += " C " + c1x + " " + c1y + ", " + c2x + " " + c2y + ", " + p2.x + " " + p2.y;
+    }
+    return d;
+  }
+
+  // ---------- DOM refs ----------
+  var eyebrow = document.getElementById("stage-eyebrow");
+  var titleEl = document.getElementById("stage-title");
+  var descEl = document.getElementById("stage-desc");
+  var badgesEl = document.getElementById("stage-badges");
+  var chartWrap = document.getElementById("chart-wrap");
+  var chartSub = document.getElementById("chart-sub");
+  var pauseBtn = document.getElementById("btn-pause");
+  var replayBtn = document.getElementById("btn-replay");
+
+  function clockGlyph() {
+    return '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true">' +
+           '<circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/>' +
+           '<path d="M8 4.5 V8 L10.5 9.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>' +
+           '</svg>';
+  }
+  function peopleGlyph() {
+    return '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true">' +
+           '<circle cx="5.5" cy="6" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/>' +
+           '<circle cx="11" cy="6.5" r="1.8" fill="none" stroke="currentColor" stroke-width="1.4"/>' +
+           '<path d="M1.8 13 C2.4 10.6 4 9.6 5.5 9.6 C7 9.6 8.6 10.6 9.2 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>' +
+           '<path d="M10 13 C10.4 11.4 11.6 10.6 12.6 10.6 C13.6 10.6 14.4 11.2 14.8 12.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>' +
+           '</svg>';
+  }
+
+  function renderStage(idx) {
+    var s = STAGES[idx];
+    eyebrow.textContent = "Stage " + (idx + 1) + " of " + N + " · Day " + s.day;
+    titleEl.textContent = s.title;
+    descEl.textContent = s.description;
+    badgesEl.innerHTML =
+      '<span class="badge">' + clockGlyph() + '<span><strong>Takes about</strong> ' + escapeHtml(s.duration) + '</span></span>' +
+      '<span class="badge">' + peopleGlyph() + '<span><strong>People:</strong> ' + escapeHtml(s.people) + '</span></span>';
+  }
+
+  function crossfadeRender(idx) {
+    if (prefersReduced) {
+      renderStage(idx);
+      return;
+    }
+    titleEl.classList.add("hidden");
+    descEl.classList.add("hidden");
+    badgesEl.classList.add("hidden");
+    setTimeout(function () {
+      renderStage(idx);
+      titleEl.classList.remove("hidden");
+      descEl.classList.remove("hidden");
+      badgesEl.classList.remove("hidden");
+    }, 250);
+  }
+
+  function updateTimeline(currentIdx) {
+    var px = stageX(currentIdx) - stageX(0);
+    var remaining = Math.max(0, TL_LEN - px);
+    fillLine.setAttribute("stroke-dashoffset", remaining);
+
+    for (var i = 0; i < dotEls.length; i++) {
+      var d = dotEls[i];
+      d.classList.remove("done", "current");
+      numEls[i].classList.remove("done", "current");
+      labelEls[i].classList.remove("current");
+      haloEls[i].classList.remove("on", "pulse");
+      d.setAttribute("r", 7);
+
+      if (i < currentIdx) {
+        d.classList.add("done");
+        numEls[i].classList.add("done");
+      } else if (i === currentIdx) {
+        d.classList.add("current");
+        numEls[i].classList.add("current");
+        labelEls[i].classList.add("current");
+        d.setAttribute("r", 10);
+        haloEls[i].classList.add("on");
+        if (!prefersReduced) haloEls[i].classList.add("pulse");
+      }
+    }
+  }
+
+  function revealLossPoint(k) {
+    var visible = [];
+    for (var i = 0; i < k; i++) {
+      visible.push({ x: xAt(TRAINING_LOSS[i].epoch), y: yAt(TRAINING_LOSS[i].loss) });
+    }
+    chartPath.setAttribute("d", smoothPath(visible));
+    for (var j = 0; j < ptEls.length; j++) {
+      var on = j < k ? 1 : 0;
+      ptEls[j].dot.setAttribute("opacity", on);
+      ptEls[j].label.setAttribute("opacity", on);
+    }
+  }
+
+  function setChartActive(active, finishedFlag) {
+    chartWrap.classList.toggle("dim", !active && !finishedFlag);
+    if (active) {
+      chartSub.textContent = "Loss across the first four training epochs.";
+    } else if (finishedFlag) {
+      chartSub.textContent = "Final loss curve from the training run.";
+    } else {
+      chartSub.textContent = "Revealed during stage 9 (Model training).";
+    }
+  }
+
+  // ---------- Animation engine ----------
+  var prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Stages 1-8 each 4s, stage 9 is 12s, stage 10 is 6s -> 50s total.
+  var DURATIONS = [4000, 4000, 4000, 4000, 4000, 4000, 4000, 4000, 12000, 6000];
+
+  var stageIdx = 0;
+  var elapsedInStage = 0;
+  var lastTick = 0;
+  var paused = false;
+  var rafId = null;
+  var lossPointsShown = 0;
+  var finished = false;
+  var snapTimer = null;
+
+  function startStage(i) {
+    stageIdx = i;
+    elapsedInStage = 0;
+    lastTick = performance.now();
+    crossfadeRender(i);
+    updateTimeline(i);
+
+    if (i === 8) {
+      lossPointsShown = 0;
+      revealLossPoint(0);
+      setChartActive(true, false);
+    } else if (i > 8) {
+      lossPointsShown = TRAINING_LOSS.length;
+      revealLossPoint(TRAINING_LOSS.length);
+      setChartActive(false, true);
+    } else {
+      setChartActive(false, false);
+    }
+  }
+
+  function tick(now) {
+    if (paused) { rafId = null; return; }
+    var dt = now - lastTick;
+    lastTick = now;
+    elapsedInStage += dt;
+
+    if (stageIdx === 8) {
+      var pointInterval = DURATIONS[8] / TRAINING_LOSS.length; // 3000ms
+      var target = Math.min(TRAINING_LOSS.length, Math.floor(elapsedInStage / pointInterval) + 1);
+      if (target > lossPointsShown) {
+        lossPointsShown = target;
+        revealLossPoint(lossPointsShown);
+      }
+    }
+
+    if (elapsedInStage >= DURATIONS[stageIdx]) {
+      if (stageIdx < STAGES.length - 1) {
+        startStage(stageIdx + 1);
+      } else {
+        finished = true;
+        updateTimeline(STAGES.length - 1);
+        setChartActive(false, true);
+        revealLossPoint(TRAINING_LOSS.length);
+        rafId = null;
+        return;
+      }
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function play() {
+    if (rafId) return;
+    paused = false;
+    pauseBtn.textContent = "Pause";
+    pauseBtn.setAttribute("aria-label", "Pause animation");
+    lastTick = performance.now();
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function pause() {
+    paused = true;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    pauseBtn.textContent = "Resume";
+    pauseBtn.setAttribute("aria-label", "Resume animation");
+  }
+
+  function clearSnap() {
+    if (snapTimer) { clearTimeout(snapTimer); snapTimer = null; }
+  }
+
+  function replay() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    clearSnap();
+    finished = false;
+    paused = false;
+    pauseBtn.textContent = "Pause";
+    pauseBtn.setAttribute("aria-label", "Pause animation");
+    lossPointsShown = 0;
+    revealLossPoint(0);
+    setChartActive(false, false);
+
+    if (prefersReduced) {
+      // Snap-step through each stage with a fixed dwell.
+      var i = 0;
+      function snap() {
+        if (i >= STAGES.length) {
+          finished = true;
+          setChartActive(false, true);
+          revealLossPoint(TRAINING_LOSS.length);
+          snapTimer = null;
+          return;
+        }
+        startStage(i);
+        if (i === 8) {
+          revealLossPoint(TRAINING_LOSS.length);
+          setChartActive(true, false);
+        }
+        i++;
+        snapTimer = setTimeout(snap, 1400);
+      }
+      snap();
+    } else {
+      startStage(0);
+      lastTick = performance.now();
+      rafId = requestAnimationFrame(tick);
+    }
+  }
+
+  // ---------- Controls ----------
+  pauseBtn.addEventListener("click", function () {
+    if (paused) play(); else pause();
+  });
+  replayBtn.addEventListener("click", replay);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+    if (e.key === " " || e.code === "Space") {
+      e.preventDefault();
+      if (paused) play(); else pause();
+    } else if (e.key === "r" || e.key === "R") {
+      e.preventDefault();
+      replay();
+    }
+  });
+
+  // ---------- Boot ----------
+  renderStage(0);
+  updateTimeline(0);
+  setChartActive(false, false);
+
+  if (prefersReduced) {
+    replay();
+  } else {
+    startStage(0);
+    lastTick = performance.now();
+    rafId = requestAnimationFrame(tick);
+  }
+})();
+</script>
+</body>
+</html>

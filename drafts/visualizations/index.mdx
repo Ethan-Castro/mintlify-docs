@@ -1,0 +1,147 @@
+---
+title: "Visualizations (draft)"
+description: "All concept-explainer animations on one page — CSI campus workflows, the CSI HPCC pipeline + cluster, and Empire AI lifecycle + service map."
+---
+
+<Note>
+  These animations are still a draft pass. They're embedded all on this single page for fast review.
+</Note>
+
+A gallery of focused concept-explainer animations for the workflows that come up most often when researchers, students, and IT staff use these systems. Each one is themed to match the docs site (white background, navy text, soft cards, CSI HPCC blue accent) and narrated in plain English so a non-technical viewer can follow along.
+
+---
+
+## 1. Campus AI governance flow
+
+How CSI's collaborating teams (ITS, the Center for Teaching, Learning, and Professional Development, faculty, administrators) get from a campus AI survey to the traffic-light policy and into classroom use.
+
+<iframe
+  src="/images/interactives/csi_governance_flow.html"
+  style={{ width: "100%", height: "640px", border: "0", borderRadius: "8px" }}
+  title="CSI campus AI governance flow"
+  loading="lazy"
+/>
+
+| # | Step | Plain-English narration |
+|---|---|---|
+| 1 | Four campus teams meet | Four CSI groups — IT, the teaching center, faculty, and administrators — kick off the campus AI conversation. |
+| 2 | They run a campus AI survey | They run an AI survey to find out how people are actually using AI on campus. |
+| 3 | Results feed into the AI Forum | The survey results inform a campus-wide forum where the policy is debated. |
+| 4 | Traffic-light policy emerges | Red prohibits AI, yellow restricts with citation, green allows it. |
+| 5 | Policy lands in syllabi and classrooms | Faculty translate the policy into syllabus guidance, which shapes how students use AI in class. |
+
+---
+
+## 2. MFA failure & recovery
+
+The five MFA outcomes you're most likely to hit at CSI — happy path plus the four common failure modes — each with a phone-mockup illustration and a "What happened / How to fix it" card.
+
+<iframe
+  src="/images/interactives/csi_mfa_recovery.html"
+  style={{ width: "100%", height: "640px", border: "0", borderRadius: "8px" }}
+  title="MFA failure and recovery"
+  loading="lazy"
+/>
+
+| # | Scenario | What happened | How to fix it |
+|---|---|---|---|
+| 1 | ✅ Successful login | You set up MFA, verified the factor immediately, and signed in with the correct one-time code. | Nothing to fix. |
+| 2 | ✕ "Verify Later" | You tapped "Verify Later" during setup. | Open Account → Security → Multi-Factor and verify the factor now. |
+| 3 | ✕ Factor never verified | You added an authenticator app but never finished verification. | Find the pending factor in Multi-Factor Settings, enter a current 6-digit code. |
+| 4 | ⚠ Phone clock drift | Your phone's clock drifted, so the one-time code is rejected. | Turn on automatic time on your phone, then retry. |
+| 5 | ✕ Locked out | Three incomplete or wrong attempts triggered an account lock. | Open a ticket at hpchelp.csi.cuny.edu — mention the lockout time. |
+
+---
+
+## 3. Data staging + Slurm pipeline
+
+A 40-second narrated tour of the seven HPCC stages from your laptop to long-term archive. The blue packet hops through, pausing at scratch (which strobes to signal "ephemeral, no backup") and at the SLURM queue (where work piles up before placement).
+
+<Frame caption="The seven-stage HPCC data and execution pipeline. White background, 1920×1080, ~40 seconds.">
+  <video controls preload="metadata" src="/images/videos/hpcc_pipeline.mp4" />
+</Frame>
+
+| # | Stage | Plain-English narration |
+|---|---|---|
+| 1 | **Workstation** | You upload code and data from your laptop. |
+| 2 | **Transfer / Gateway** | Globus or SFTP moves the files onto the cluster. |
+| 3 | **Home** (`/global/u/<id>`) | Files land in your durable home directory — backed up, slow. |
+| 4 | **Scratch** (`/scratch/<id>`) | You stage the files into scratch — fast NVMe, no backup. |
+| 5 | **SLURM queue** | You submit the job; SLURM queues it until nodes are free. |
+| 6 | **Arrow compute** | SLURM places the job on Arrow's CPU or GPU nodes. |
+| 7 | **Archive** | Outputs go back to home; long-term results to archive. |
+
+---
+
+## 4. Hybrid cluster simulation
+
+A scripted 30-second top-down schematic showing how SLURM matches four jobs to CPU, GPU, and high-memory racks. CPU racks are blue squares, GPU racks are purple diamonds, the high-memory node is an amber pill — distinguishable by both color and shape.
+
+<iframe
+  src="/images/interactives/hpcc_hybrid_cluster.html"
+  style={{ width: "100%", height: "640px", border: "0", borderRadius: "8px" }}
+  title="HPCC hybrid cluster scheduling"
+  loading="lazy"
+/>
+
+| # | Step | Plain-English narration |
+|---|---|---|
+| 1 | Jobs arrive | Four jobs arrive in the queue. Each says how many CPUs and GPUs it needs. |
+| 2 | `job-a` → CPU rack | `job-a` wants 16 CPUs, no GPU. SLURM places it on a CPU rack. |
+| 3 | `job-b` → small GPU | `job-b` wants 8 CPUs and 1 GPU. SLURM finds an open GPU rack. |
+| 4 | `job-c` waits | `job-c` wants 128 CPUs — bigger than any rack except high-memory. SLURM holds it. |
+| 5 | `job-d` → large GPU | `job-d` wants 32 CPUs and 4 GPUs. SLURM puts it on the large GPU rack. |
+| 6 | `job-c` → high-mem | `job-c` finally gets the high-memory node. |
+
+---
+
+## 5. Allocation → training lifecycle
+
+A 50-second narrated horizontal timeline of an Empire AI project from proposal (day 0) through monitoring (day 84). The narration card below the timeline updates per stage; a small loss-curve panel reveals during the training stage.
+
+<iframe
+  src="/images/interactives/empire_ai_lifecycle.html"
+  style={{ width: "100%", height: "720px", border: "0", borderRadius: "8px" }}
+  title="Empire AI allocation to training lifecycle"
+  loading="lazy"
+/>
+
+| Day | Stage | Typical duration | People |
+|---|---|---|---|
+| 0 | Proposal submitted | 1 day | you, your PI |
+| 7 | Campus review | 1-2 weeks | campus committee |
+| 21 | Institutional umbrella review | 2-3 weeks | consortium board |
+| 35 | Allocation awarded | instant | Empire AI Support |
+| 42 | Alpha+ onboarding | 3-5 days | you, CCR Support |
+| 49 | Data transfer | 1-7 days | you |
+| 56 | Container / ARM64 prep | 1-2 weeks | you, CCR Support |
+| 70 | Beta-ready workflow | instant | you |
+| 77 | Model training | days to weeks | you |
+| 84 | Monitoring + fairshare | ongoing | Empire AI ops |
+
+---
+
+## 6. Service & support map
+
+Two synchronized halves driven by the same clock. The chat-log on the left tells the story in plain English; the service map on the right shows the operational topology — source pill pulses, an arc traces to the target, target pulses.
+
+<iframe
+  src="/images/interactives/empire_ai_service_map.html"
+  style={{ width: "100%", height: "720px", border: "0", borderRadius: "8px" }}
+  title="Empire AI service and support map"
+  loading="lazy"
+/>
+
+| Day | From → To | Event | Plain-English |
+|---|---|---|---|
+| 0 | PI → HPCC Bridge | 💬 consult | You ask the HPCC bridge team if your project fits Empire AI. |
+| 2 | PI → Campus Review | ✉ proposal | You submit a formal proposal. |
+| 8 | Campus → Umbrella | ✉ forward | Campus approves and forwards to the consortium board. |
+| 14 | Umbrella → CCR | ★ award | Allocation awarded; CCR Support takes over onboarding. |
+| 16 | CCR → Empire AI | 🎫 ticket | CCR files a ticket asking Empire AI Support to create accounts. |
+| 20 | Empire AI → PI | 👋 onboarding | You receive activation instructions: SSH keys, ColdFront link. |
+| 24 | PI → Transfer | ⇌ transfer | You upload training data through Globus. |
+| 28 | PI → Alpha+ | ▶ job | You submit your first SLURM job. |
+| 31 | PI → Empire AI | ⚠ incident | Job sits in the queue longer than expected; you open a ticket. |
+| 33 | Empire AI → CCR | ↑ escalate | Empire AI escalates to CCR for cluster-level context. |
+| 37 | CCR → PI | ✓ resolution | CCR recommends a smoke-test path to a faster queue first. |

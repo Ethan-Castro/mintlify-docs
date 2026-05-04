@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hybrid cluster — how SLURM matches jobs to nodes</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f8fafc;
+    --border: #e5e7eb;
+    --ink: #0f172a;
+    --ink-2: #334155;
+    --muted: #64748b;
+    --accent: #7abde8;
+    --accent-deep: #1f4f7a;
+    --cpu: #7abde8;
+    --cpu-bg: #eaf4fb;
+    --cpu-ink: #1f4f7a;
+    --gpu: #b88aff;
+    --gpu-bg: #f1e9ff;
+    --gpu-ink: #5a3a9a;
+    --highmem: #f5a96b;
+    --highmem-bg: #fdeed8;
+    --highmem-ink: #8a4a14;
+    --wait-bg: #fff7ed;
+    --wait-border: #f5a96b;
+    --wait-ink: #8a4a14;
+    --shadow: 0 1px 2px rgba(15,23,42,0.04), 0 4px 16px rgba(15,23,42,0.06);
+    --shadow-lift: 0 2px 4px rgba(15,23,42,0.06), 0 10px 28px rgba(15,23,42,0.10);
+    --radius: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f111a;
+      --surface: #131620;
+      --surface-2: #1e2132;
+      --border: #2d3142;
+      --ink: #f8fafc;
+      --ink-2: #cbd5e1;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-deep: #7dd3fc;
+      --cpu: #38bdf8;
+      --cpu-bg: rgba(56, 189, 248, 0.15);
+      --cpu-ink: #bae6fd;
+      --gpu: #c084fc;
+      --gpu-bg: rgba(192, 132, 252, 0.15);
+      --gpu-ink: #e9d5ff;
+      --highmem: #fb923c;
+      --highmem-bg: rgba(251, 146, 60, 0.15);
+      --highmem-ink: #fed7aa;
+      --wait-bg: rgba(251, 146, 60, 0.15);
+      --wait-border: #fb923c;
+      --wait-ink: #fed7aa;
+      --shadow: 0 4px 16px rgba(0,0,0,0.3);
+      --shadow-lift: 0 10px 28px rgba(0,0,0,0.4);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    background: var(--surface-2);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.45;
+    transition: background 300ms ease, color 300ms ease;
+  }
+
+  .frame {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    transition: background 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
+  }
+
+  /* Header */
+  header.app-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 22px;
+    margin-bottom: 18px;
+  }
+  .title-block h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    transition: color 300ms ease;
+  }
+  .title-block p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--muted);
+    transition: color 300ms ease;
+  }
+  .pip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-2);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 999px;
+    transition: background 300ms ease, color 300ms ease, border-color 300ms ease;
+  }
+  .pip .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); background: var(--surface-2); }
+  .btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .btn.primary {
+    background: var(--accent-deep);
+    border-color: var(--accent-deep);
+    color: #fff;
+  }
+  .btn.primary:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* Stage */
+  .stage {
+    padding: 22px;
+    margin-bottom: 14px;
+  }
+
+  .svg-wrap {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: background 300ms ease, border-color 300ms ease;
+  }
+  svg.scene { display: block; width: 100%; height: auto; }
+
+  /* Narration */
+  .narration {
+    padding: 16px 22px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .narration .chev {
+    flex: 0 0 auto;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 14px;
+    line-height: 1.45;
+    letter-spacing: 0.04em;
+    transition: color 300ms ease;
+  }
+  .narration .text {
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.55;
+    transition: color 300ms ease;
+  }
+  .narration .text strong.step-tag {
+    display: inline-block;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-right: 8px;
+    vertical-align: 1px;
+    transition: background 300ms ease, border-color 300ms ease, color 300ms ease;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 12px 22px 18px;
+    font-size: 12.5px;
+    color: var(--muted);
+    transition: color 300ms ease;
+  }
+  .legend .item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .legend .swatch {
+    width: 14px; height: 14px; border-radius: 3px;
+    border: 1px solid var(--border);
+    transition: border-color 300ms ease;
+  }
+  
+  .dynamic-fill { fill: var(--surface); transition: fill 300ms ease; }
+  .dynamic-fill-2 { fill: var(--surface-2); transition: fill 300ms ease; }
+  .dynamic-stroke { stroke: var(--border); transition: stroke 300ms ease; }
+  .dynamic-ink { fill: var(--ink); transition: fill 300ms ease; }
+  .dynamic-muted { fill: var(--muted); transition: fill 300ms ease; }
+  .dynamic-ink-2 { fill: var(--ink-2); transition: fill 300ms ease; }
+  
+  .cpu-stroke { stroke: var(--cpu); transition: stroke 300ms ease; }
+  .cpu-fill { fill: var(--cpu); transition: fill 300ms ease; }
+  
+  .gpu-stroke { stroke: var(--gpu); transition: stroke 300ms ease; }
+  .gpu-fill { fill: var(--gpu); transition: fill 300ms ease; }
+
+  .highmem-stroke { stroke: var(--highmem); transition: stroke 300ms ease; }
+  .highmem-fill { fill: var(--highmem); transition: fill 300ms ease; }
+
+  @media (max-width: 720px) {
+    .frame { padding: 14px; }
+    header.app-head { flex-direction: column; align-items: flex-start; }
+    .title-block h1 { font-size: 17px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+
+    <header class="app-head card">
+      <div class="title-block">
+        <h1>Hybrid cluster — how SLURM matches jobs to nodes</h1>
+        <p>A scripted walkthrough of how the scheduler routes mixed CPU, GPU, and high-memory work.</p>
+      </div>
+      <div class="controls">
+        <span class="pip" id="step-pip"><span class="dot"></span><span id="step-label">Step 1 of 6</span></span>
+        <button class="btn" id="btn-pause" aria-label="Pause animation">Pause</button>
+        <button class="btn primary" id="btn-replay" aria-label="Replay animation">Replay</button>
+      </div>
+    </header>
+
+    <section class="stage card">
+      <div class="svg-wrap">
+        <svg class="scene" id="scene" viewBox="0 0 1040 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Top-down schematic of a hybrid cluster">
+          <defs>
+            <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+              <feOffset dx="0" dy="3" result="offsetblur"/>
+              <feComponentTransfer><feFuncA type="linear" slope="0.18"/></feComponentTransfer>
+              <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <!-- Queue card -->
+          <g id="queue-card">
+            <rect x="24" y="24" width="540" height="200" rx="12" ry="12"
+                  fill="var(--surface)" stroke="#e5e7eb" stroke-width="1" filter="url(#soft-shadow)"/>
+            <text x="44" y="54" font-size="13" font-weight="600" fill="var(--ink)"
+                  font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">
+              Job queue (FIFO)
+            </text>
+            <text x="44" y="72" font-size="11.5" fill="#64748b"
+                  font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">
+              Submitted jobs wait here until SLURM finds a matching node.
+            </text>
+            <line x1="44" y1="178" x2="544" y2="178" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="3 4"/>
+            <text x="44" y="198" font-size="10.5" fill="#94a3b8"
+                  font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">
+              Front of queue ▸
+            </text>
+          </g>
+
+          <!-- Cluster card -->
+          <g id="cluster-card">
+            <rect x="588" y="24" width="428" height="512" rx="12" ry="12"
+                  fill="var(--surface)" stroke="#e5e7eb" stroke-width="1" filter="url(#soft-shadow)"/>
+            <text x="608" y="54" font-size="13" font-weight="600" fill="var(--ink)"
+                  font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">
+              Cluster
+            </text>
+            <text x="608" y="72" font-size="11.5" fill="#64748b"
+                  font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">
+              Three node families with different shapes and capacities.
+            </text>
+          </g>
+
+          <!-- CPU rack -->
+          <g id="rack-cpu" class="rack" data-rack="cpu">
+            <rect x="608" y="92" width="388" height="128" rx="10" ry="10"
+                  fill="#f8fafc" stroke="#e5e7eb" stroke-width="1.5"/>
+            <text x="624" y="114" font-size="12" font-weight="600" fill="var(--ink)"
+                  font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">CPU racks</text>
+            <text x="624" y="130" font-size="11" fill="#64748b"
+                  font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">General-purpose compute · 32 CPUs each</text>
+            <g id="slot-cpu-1" data-slot="cpu-1">
+              <rect x="640" y="148" width="160" height="56" rx="8" ry="8"
+                    fill="var(--surface)" stroke="#7abde8" stroke-width="1.5"/>
+              <rect x="652" y="160" width="14" height="14" rx="2" fill="#7abde8" opacity="0.85"/>
+              <rect x="670" y="160" width="14" height="14" rx="2" fill="#7abde8" opacity="0.85"/>
+              <rect x="688" y="160" width="14" height="14" rx="2" fill="#7abde8" opacity="0.85"/>
+              <rect x="706" y="160" width="14" height="14" rx="2" fill="#7abde8" opacity="0.85"/>
+              <text x="652" y="194" font-size="10.5" fill="#334155" font-weight="600"
+                    font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">cpu-1 · 32 CPUs</text>
+            </g>
+            <g id="slot-cpu-2" data-slot="cpu-2">
+              <rect x="816" y="148" width="160" height="56" rx="8" ry="8"
+                    fill="var(--surface)" stroke="#7abde8" stroke-width="1.5"/>
+              <rect x="828" y="160" width="14" height="14" rx="2" fill="#7abde8" opacity="0.85"/>
+              <rect x="846" y="160" width="14" height="14" rx="2" fill="#7abde8" opacity="0.85"/>
+              <rect x="864" y="160" width="14" height="14" rx="2" fill="#7abde8" opacity="0.85"/>
+              <rect x="882" y="160" width="14" height="14" rx="2" fill="#7abde8" opacity="0.85"/>
+              <text x="828" y="194" font-size="10.5" fill="#334155" font-weight="600"
+                    font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">cpu-2 · 32 CPUs</text>
+            </g>
+          </g>
+
+          <!-- GPU rack -->
+          <g id="rack-gpu" class="rack" data-rack="gpu">
+            <rect x="608" y="234" width="388" height="160" rx="10" ry="10"
+                  fill="#f8fafc" stroke="#e5e7eb" stroke-width="1.5"/>
+            <text x="624" y="256" font-size="12" font-weight="600" fill="var(--ink)"
+                  font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">GPU racks</text>
+            <text x="624" y="272" font-size="11" fill="#64748b"
+                  font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">Accelerator nodes for ML and simulation</text>
+            <g id="slot-gpu-1" data-slot="gpu-1">
+              <rect x="640" y="290" width="160" height="80" rx="8" ry="8"
+                    fill="var(--surface)" stroke="var(--gpu)" stroke-width="1.5"/>
+              <polygon points="664,318 678,332 664,346 650,332" fill="#b88aff" opacity="0.85"/>
+              <polygon points="700,318 714,332 700,346 686,332" fill="#b88aff" opacity="0.85"/>
+              <text x="652" y="362" font-size="10.5" fill="#334155" font-weight="600"
+                    font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">gpu-1 · 16 CPU · 2 GPU</text>
+            </g>
+            <g id="slot-gpu-2" data-slot="gpu-2">
+              <rect x="816" y="290" width="160" height="80" rx="8" ry="8"
+                    fill="var(--surface)" stroke="var(--gpu)" stroke-width="1.5"/>
+              <polygon points="832,304 846,318 832,332 818,318" fill="#b88aff" opacity="0.85"/>
+              <polygon points="860,304 874,318 860,332 846,318" fill="#b88aff" opacity="0.85"/>
+              <polygon points="888,304 902,318 888,332 874,318" fill="#b88aff" opacity="0.85"/>
+              <polygon points="916,304 930,318 916,332 902,318" fill="#b88aff" opacity="0.85"/>
+              <polygon points="846,332 860,346 846,360 832,346" fill="#b88aff" opacity="0.85"/>
+              <polygon points="874,332 888,346 874,360 860,346" fill="#b88aff" opacity="0.85"/>
+              <polygon points="902,332 916,346 902,360 888,346" fill="#b88aff" opacity="0.85"/>
+              <polygon points="930,332 944,346 930,360 916,346" fill="#b88aff" opacity="0.85"/>
+              <text x="828" y="362" font-size="10.5" fill="#334155" font-weight="600"
+                    font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">gpu-2 · 40 CPU · 8 GPU</text>
+            </g>
+          </g>
+
+          <!-- High-mem rack -->
+          <g id="rack-highmem" class="rack" data-rack="highmem">
+            <rect x="608" y="408" width="388" height="120" rx="10" ry="10"
+                  fill="#f8fafc" stroke="#e5e7eb" stroke-width="1.5"/>
+            <text x="624" y="430" font-size="12" font-weight="600" fill="var(--ink)"
+                  font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">High-memory rack</text>
+            <text x="624" y="446" font-size="11" fill="#64748b"
+                  font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">One fat node — 384 CPUs, terabytes of RAM</text>
+            <g id="slot-mem-1" data-slot="mem-1">
+              <rect x="640" y="462" width="40" height="56" rx="20" ry="20"
+                    fill="var(--surface)" stroke="#f5a96b" stroke-width="1.5"/>
+              <rect x="650" y="472" width="20" height="6" rx="2" fill="#f5a96b" opacity="0.85"/>
+              <rect x="650" y="482" width="20" height="6" rx="2" fill="#f5a96b" opacity="0.85"/>
+              <rect x="650" y="492" width="20" height="6" rx="2" fill="#f5a96b" opacity="0.85"/>
+              <rect x="650" y="502" width="20" height="6" rx="2" fill="#f5a96b" opacity="0.85"/>
+              <text x="694" y="488" font-size="10.5" fill="#334155" font-weight="600"
+                    font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">mem-1 · 384 CPUs</text>
+              <text x="694" y="504" font-size="10" fill="#64748b"
+                    font-family="-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif">For very large jobs</text>
+            </g>
+          </g>
+
+          <!-- In-flight job chips render layer (drawn last so they sit on top) -->
+          <g id="jobs-layer"></g>
+        </svg>
+      </div>
+
+      <div class="legend" aria-hidden="false">
+        <span class="item"><span class="swatch" style="background:#7abde8"></span>CPU node (small squares)</span>
+        <span class="item"><span class="swatch" style="background:#b88aff;border-radius:50%"></span>GPU node (diamonds)</span>
+        <span class="item"><span class="swatch" style="background:#f5a96b;border-radius:7px"></span>High-memory node (tall pill)</span>
+      </div>
+    </section>
+
+    <section class="card narration" aria-live="polite">
+      <span class="chev">&gt;&gt;</span>
+      <div class="text" id="narration">
+        <strong class="step-tag" id="step-tag">Step 1 of 6</strong>
+        <span id="narration-text">Four jobs arrive in the queue. Each says how many CPUs and GPUs it needs.</span>
+      </div>
+    </section>
+
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Data ---------- */
+  const NODES = [
+    { id: "cpu-1",  cls: "cpu",     label: "CPU rack",  capacity: "32 CPUs" },
+    { id: "cpu-2",  cls: "cpu",     label: "CPU rack",  capacity: "32 CPUs" },
+    { id: "gpu-1",  cls: "gpu",     label: "Small GPU", capacity: "16 CPU · 2 GPU" },
+    { id: "gpu-2",  cls: "gpu",     label: "Large GPU", capacity: "40 CPU · 8 GPU" },
+    { id: "mem-1",  cls: "highmem", label: "High-mem",  capacity: "384 CPUs" }
+  ];
+
+  const JOBS = [
+    { id: "job-a", ask: "16 CPU",          cls: "cpu" },
+    { id: "job-b", ask: "8 CPU · 1 GPU",   cls: "gpu" },
+    { id: "job-c", ask: "128 CPU",         cls: "highmem" },
+    { id: "job-d", ask: "32 CPU · 4 GPU",  cls: "gpu" }
+  ];
+
+  const SCRIPT = [
+    { step: 1, narration: "Four jobs arrive in the queue. Each says how many CPUs and GPUs it needs.",
+      action: "show_queue" },
+    { step: 2, narration: "job-a wants 16 CPUs, no GPU. SLURM places it on a CPU rack.",
+      action: "place", job: "job-a", target: "cpu-1" },
+    { step: 3, narration: "job-b wants 8 CPUs and 1 GPU. SLURM finds an open GPU rack.",
+      action: "place", job: "job-b", target: "gpu-1" },
+    { step: 4, narration: "job-c wants 128 CPUs — bigger than any rack except high-memory. SLURM holds it in the queue while the small jobs run.",
+      action: "wait", job: "job-c" },
+    { step: 5, narration: "job-d wants 32 CPUs and 4 GPUs. SLURM puts it on the large GPU rack.",
+      action: "place", job: "job-d", target: "gpu-2" },
+    { step: 6, narration: "job-c finally gets the high-memory node.",
+      action: "place", job: "job-c", target: "mem-1" }
+  ];
+
+  const SVG_NS = "http://www.w3.org/2000/svg";
+
+  /* ---------- Geometry ---------- */
+  // Queue chip positions inside the queue card (top-left card area).
+  const QUEUE_BASE_X = 48;
+  const QUEUE_Y      = 96;
+  const CHIP_W       = 122;
+  const CHIP_H       = 60;
+  const CHIP_GAP     = 12;
+
+  function queueSlotXY(index) {
+    return {
+      x: QUEUE_BASE_X + index * (CHIP_W + CHIP_GAP),
+      y: QUEUE_Y
+    };
+  }
+
+  // Compute the top-left position so a chip sits centered in a node slot rect.
+  function slotCenter(slotId) {
+    const slot = document.getElementById("slot-" + slotId);
+    if (!slot) return { x: 0, y: 0 };
+    const rect = slot.querySelector("rect");
+    const x = parseFloat(rect.getAttribute("x"));
+    const y = parseFloat(rect.getAttribute("y"));
+    const w = parseFloat(rect.getAttribute("width"));
+    const h = parseFloat(rect.getAttribute("height"));
+    return {
+      x: x + w / 2 - CHIP_W / 2,
+      y: y + h / 2 - CHIP_H / 2
+    };
+  }
+
+  /* ---------- DOM refs ---------- */
+  const jobsLayer    = document.getElementById("jobs-layer");
+  const stepLabel    = document.getElementById("step-label");
+  const stepTag      = document.getElementById("step-tag");
+  const narrationEl  = document.getElementById("narration-text");
+  const btnReplay    = document.getElementById("btn-replay");
+  const btnPause     = document.getElementById("btn-pause");
+
+  const reduceMotion = window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- Job chip construction ---------- */
+  function chipColor(cls) {
+    if (cls === "cpu")     return { fill: "var(--cpu-bg)", stroke: "var(--cpu)", ink: "var(--cpu-ink)" };
+    if (cls === "gpu")     return { fill: "var(--gpu-bg)", stroke: "var(--gpu)", ink: "var(--gpu-ink)" };
+    if (cls === "highmem") return { fill: "var(--highmem-bg)", stroke: "var(--highmem)", ink: "var(--highmem-ink)" };
+    return { fill: "var(--surface-2)", stroke: "var(--border)", ink: "var(--ink)" };
+  }
+
+  function buildJobChip(job) {
+    const c = chipColor(job.cls);
+    const g = document.createElementNS(SVG_NS, "g");
+    g.setAttribute("class", "job-chip");
+    g.setAttribute("data-job", job.id);
+    g.setAttribute("transform", "translate(0,0)");
+
+    const rect = document.createElementNS(SVG_NS, "rect");
+    rect.setAttribute("x", "0");
+    rect.setAttribute("y", "0");
+    rect.setAttribute("width", CHIP_W);
+    rect.setAttribute("height", CHIP_H);
+    rect.setAttribute("rx", "10");
+    rect.setAttribute("ry", "10");
+    rect.setAttribute("fill", c.fill);
+    rect.setAttribute("stroke", c.stroke);
+    rect.setAttribute("stroke-width", "1.5");
+    rect.setAttribute("filter", "url(#soft-shadow)");
+    rect.style.transition = "fill 300ms ease, stroke 300ms ease";
+    g.appendChild(rect);
+
+    const dot = document.createElementNS(SVG_NS, "circle");
+    dot.setAttribute("cx", "14");
+    dot.setAttribute("cy", "18");
+    dot.setAttribute("r", "4");
+    dot.setAttribute("fill", c.stroke);
+    dot.style.transition = "fill 300ms ease";
+    g.appendChild(dot);
+
+    const name = document.createElementNS(SVG_NS, "text");
+    name.setAttribute("x", "26");
+    name.setAttribute("y", "22");
+    name.setAttribute("font-size", "12.5");
+    name.setAttribute("font-weight", "700");
+    name.setAttribute("fill", c.ink);
+    name.setAttribute("font-family", "-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif");
+    name.style.transition = "fill 300ms ease";
+    name.textContent = job.id;
+    g.appendChild(name);
+
+    const ask = document.createElementNS(SVG_NS, "text");
+    ask.setAttribute("x", "12");
+    ask.setAttribute("y", "44");
+    ask.setAttribute("font-size", "11");
+    ask.setAttribute("fill", "var(--ink-2)");
+    ask.setAttribute("font-family", "-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif");
+    ask.style.transition = "fill 300ms ease";
+    ask.textContent = job.ask;
+    g.appendChild(ask);
+
+    // "waiting" badge (hidden by default)
+    const badge = document.createElementNS(SVG_NS, "g");
+    badge.setAttribute("class", "wait-badge");
+    badge.setAttribute("opacity", "0");
+    const bRect = document.createElementNS(SVG_NS, "rect");
+    bRect.setAttribute("x", CHIP_W - 56);
+    bRect.setAttribute("y", "8");
+    bRect.setAttribute("width", "48");
+    bRect.setAttribute("height", "16");
+    bRect.setAttribute("rx", "8");
+    bRect.setAttribute("ry", "8");
+    bRect.setAttribute("fill", "var(--wait-bg)");
+    bRect.setAttribute("stroke", "var(--wait-border)");
+    bRect.setAttribute("stroke-width", "1");
+    bRect.style.transition = "fill 300ms ease, stroke 300ms ease";
+    badge.appendChild(bRect);
+    const bText = document.createElementNS(SVG_NS, "text");
+    bText.setAttribute("x", CHIP_W - 32);
+    bText.setAttribute("y", "20");
+    bText.setAttribute("text-anchor", "middle");
+    bText.setAttribute("font-size", "10");
+    bText.setAttribute("font-weight", "700");
+    bText.setAttribute("fill", "var(--wait-ink)");
+    bText.setAttribute("font-family", "-apple-system,BlinkMacSystemFont,Inter,Segoe UI,sans-serif");
+    bText.style.transition = "fill 300ms ease";
+    bText.textContent = "waiting";
+    badge.appendChild(bText);
+    g.appendChild(badge);
+
+    return g;
+  }
+
+  /* ---------- State ---------- */
+  // jobState: id -> { el, location: "queue"|"node", queueIndex?, nodeId?, x, y }
+  const jobState = {};
+  let queueOrder = [];
+  let stepIdx    = 0;
+  let timer      = null;
+  let paused     = false;
+
+  const STEP_DURATION_MS = 5000; // ~5s per step
+  const ANIM_MS          = reduceMotion ? 0 : 480;
+
+  /* ---------- Animation helpers ---------- */
+  function setTransform(el, x, y) {
+    el.setAttribute("transform", "translate(" + x.toFixed(1) + "," + y.toFixed(1) + ")");
+  }
+
+  function animateChip(el, fromX, fromY, toX, toY, durationMs, onDone) {
+    if (durationMs <= 0) {
+      setTransform(el, toX, toY);
+      if (onDone) onDone();
+      return;
+    }
+    const start = performance.now();
+    const baseRect = el.querySelector("rect");
+    const origStrokeWidth = baseRect.getAttribute("stroke-width");
+
+    function ease(t) {
+      // easeInOutCubic
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function frame(now) {
+      const t = Math.min(1, (now - start) / durationMs);
+      const k = ease(t);
+      const x = fromX + (toX - fromX) * k;
+      const y = fromY + (toY - fromY) * k;
+      setTransform(el, x, y);
+      // gentle pulse on the stroke while traveling
+      baseRect.setAttribute("stroke-width", (1.5 + 1.0 * Math.sin(t * Math.PI)).toFixed(2));
+      if (t < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        baseRect.setAttribute("stroke-width", origStrokeWidth);
+        if (onDone) onDone();
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function highlightRackSlot(slotId) {
+    const slot = document.getElementById("slot-" + slotId);
+    if (!slot) return;
+    const rect = slot.querySelector("rect");
+    const origStroke = rect.getAttribute("stroke");
+    const origWidth  = rect.getAttribute("stroke-width");
+    rect.setAttribute("stroke", "#1f4f7a");
+    rect.setAttribute("stroke-width", "3");
+    setTimeout(function () {
+      rect.setAttribute("stroke", origStroke);
+      rect.setAttribute("stroke-width", origWidth);
+    }, reduceMotion ? 0 : 600);
+  }
+
+  /* ---------- Queue management ---------- */
+  function repositionQueue(animate) {
+    queueOrder.forEach(function (jobId, i) {
+      const st  = jobState[jobId];
+      if (!st || st.location !== "queue") return;
+      const dst = queueSlotXY(i);
+      if (animate && (st.x !== dst.x || st.y !== dst.y)) {
+        animateChip(st.el, st.x, st.y, dst.x, dst.y, ANIM_MS);
+      } else {
+        setTransform(st.el, dst.x, dst.y);
+      }
+      st.x = dst.x; st.y = dst.y;
+      st.queueIndex = i;
+    });
+  }
+
+  function setWaitBadge(jobId, on) {
+    const st = jobState[jobId];
+    if (!st) return;
+    const badge = st.el.querySelector(".wait-badge");
+    if (badge) badge.setAttribute("opacity", on ? "1" : "0");
+  }
+
+  /* ---------- Setup / reset ---------- */
+  function resetScene() {
+    while (jobsLayer.firstChild) jobsLayer.removeChild(jobsLayer.firstChild);
+    queueOrder = [];
+    Object.keys(jobState).forEach(function (k) { delete jobState[k]; });
+
+    JOBS.forEach(function (job, i) {
+      const el = buildJobChip(job);
+      jobsLayer.appendChild(el);
+      const xy = queueSlotXY(i);
+      setTransform(el, xy.x, xy.y);
+      el.style.opacity = "0";
+      requestAnimationFrame(function () {
+        el.style.transition = reduceMotion ? "none" : "opacity 380ms ease";
+        el.style.opacity = "1";
+      });
+      jobState[job.id] = {
+        el: el,
+        location: "queue",
+        queueIndex: i,
+        x: xy.x, y: xy.y
+      };
+      queueOrder.push(job.id);
+    });
+  }
+
+  /* ---------- Step actions ---------- */
+  function applyStep(stepObj, onDone) {
+    updateNarration(stepObj);
+
+    if (stepObj.action === "show_queue") {
+      repositionQueue(false);
+      if (onDone) onDone();
+      return;
+    }
+
+    if (stepObj.action === "wait") {
+      setWaitBadge(stepObj.job, true);
+      if (onDone) onDone();
+      return;
+    }
+
+    if (stepObj.action === "place") {
+      const jobId  = stepObj.job;
+      const target = stepObj.target;
+      const st     = jobState[jobId];
+      if (!st) { if (onDone) onDone(); return; }
+
+      const qi = queueOrder.indexOf(jobId);
+      if (qi !== -1) queueOrder.splice(qi, 1);
+
+      setWaitBadge(jobId, false);
+
+      const dst = slotCenter(target);
+      jobsLayer.appendChild(st.el); // bring to top
+
+      animateChip(st.el, st.x, st.y, dst.x, dst.y, ANIM_MS, function () {
+        st.x = dst.x; st.y = dst.y;
+        st.location = "node";
+        st.nodeId = target;
+        highlightRackSlot(target);
+        repositionQueue(true);
+        if (onDone) onDone();
+      });
+      return;
+    }
+
+    if (onDone) onDone();
+  }
+
+  function updateNarration(stepObj) {
+    const total = SCRIPT.length;
+    stepLabel.textContent = "Step " + stepObj.step + " of " + total;
+    stepTag.textContent   = "Step " + stepObj.step + " of " + total;
+    narrationEl.textContent = stepObj.narration;
+  }
+
+  /* ---------- Playback loop ---------- */
+  function clearTimer() {
+    if (timer) { clearTimeout(timer); timer = null; }
+  }
+
+  function playFromCurrent() {
+    clearTimer();
+    if (paused) return;
+    if (stepIdx >= SCRIPT.length) return;
+
+    const stepObj = SCRIPT[stepIdx];
+    applyStep(stepObj, function () {
+      timer = setTimeout(function () {
+        stepIdx += 1;
+        if (stepIdx < SCRIPT.length) playFromCurrent();
+      }, STEP_DURATION_MS);
+    });
+  }
+
+  function replay() {
+    clearTimer();
+    paused = false;
+    btnPause.textContent = "Pause";
+    btnPause.setAttribute("aria-label", "Pause animation");
+    stepIdx = 0;
+    resetScene();
+    playFromCurrent();
+  }
+
+  function togglePause() {
+    if (paused) {
+      paused = false;
+      btnPause.textContent = "Pause";
+      btnPause.setAttribute("aria-label", "Pause animation");
+      timer = setTimeout(function () {
+        stepIdx += 1;
+        if (stepIdx < SCRIPT.length) playFromCurrent();
+      }, 600);
+    } else {
+      paused = true;
+      btnPause.textContent = "Resume";
+      btnPause.setAttribute("aria-label", "Resume animation");
+      clearTimer();
+    }
+  }
+
+  /* ---------- Wire up ---------- */
+  btnReplay.addEventListener("click", replay);
+  btnPause.addEventListener("click", togglePause);
+
+  // Kick off
+  resetScene();
+  playFromCurrent();
+})();
+</script>
+</body>
+</html>
+>
+</html>
+tml>
+
+</html>
+>
+</html>
+tml>

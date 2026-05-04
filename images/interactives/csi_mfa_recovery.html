@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CSI MFA failure & recovery</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f8fafc;
+    --border: #e5e7eb;
+    --ink: #0f172a;
+    --ink-2: #334155;
+    --muted: #64748b;
+    --accent: #7abde8;
+    --accent-bg: #f0f9ff;
+    --accent-deep: #1f4f7a;
+    --success: #16a34a;
+    --success-bg: #dcfce7;
+    --warning: #d97706;
+    --warning-bg: #fef3c7;
+    --danger: #dc2626;
+    --danger-bg: #fee2e2;
+    --shadow: 0 1px 2px rgba(15,23,42,0.04), 0 4px 16px rgba(15,23,42,0.06);
+    --radius: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f111a;
+      --surface: #131620;
+      --surface-2: #1e2132;
+      --border: #2d3142;
+      --ink: #f8fafc;
+      --ink-2: #cbd5e1;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-bg: rgba(56, 189, 248, 0.15);
+      --accent-deep: #7dd3fc;
+      --success: #4ade80;
+      --success-bg: rgba(74, 222, 128, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --danger: #f87171;
+      --danger-bg: rgba(248, 113, 113, 0.15);
+      --shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background 300ms ease, color 300ms ease;
+  }
+
+  .stage {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(12px, 2.4vw, 28px);
+    gap: clamp(10px, 1.6vw, 18px);
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: clamp(13px, 1.4vw, 15px);
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    transition: color 300ms ease;
+  }
+
+  .header-title .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-bg);
+  }
+
+  .pip {
+    color: var(--muted);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    transition: color 300ms ease;
+  }
+
+  .card {
+    flex: 1 1 auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 0;
+    transition: background 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
+  }
+
+  @media (max-width: 760px) {
+    .card { grid-template-columns: 1fr; grid-template-rows: minmax(220px, 40%) 1fr; }
+  }
+
+  .pane {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .pane-left {
+    background: var(--surface-2);
+    border-right: 1px solid var(--border);
+    transition: background 300ms ease, border-color 300ms ease;
+  }
+
+  @media (max-width: 760px) {
+    .pane-left { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms ease;
+    display: flex;
+  }
+
+  .slide.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .slide-left {
+    align-items: center;
+    justify-content: center;
+    padding: clamp(16px, 3vw, 36px);
+  }
+
+  .slide-right {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: clamp(14px, 1.6vw, 22px);
+    padding: clamp(20px, 3.2vw, 40px);
+    overflow: auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide { transition: none; }
+  }
+
+  .icon-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .icon-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    transition: background 300ms ease;
+  }
+
+  .icon-arrow {
+    color: var(--muted);
+    font-size: 22px;
+    line-height: 1;
+    transition: color 300ms ease;
+  }
+
+  .icon-recover {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    transition: background 300ms ease, border-color 300ms ease, color 300ms ease;
+  }
+
+  .scenario-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    transition: color 300ms ease;
+  }
+
+  .scenario-tag .swatch {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    transition: background 300ms ease;
+  }
+
+  .slide-title {
+    font-size: clamp(20px, 2.4vw, 28px);
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.2;
+    margin: 0;
+    transition: color 300ms ease;
+  }
+
+  .section {
+    border-top: 1px solid var(--border);
+    padding-top: clamp(12px, 1.4vw, 16px);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: border-color 300ms ease;
+  }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    transition: color 300ms ease;
+  }
+
+  .section-body {
+    font-size: clamp(14px, 1.45vw, 16px);
+    line-height: 1.55;
+    color: var(--ink-2);
+    margin: 0;
+    transition: color 300ms ease;
+  }
+
+  .phone-wrap {
+    width: min(100%, 260px);
+    aspect-ratio: 9 / 18;
+    position: relative;
+    filter: drop-shadow(0 12px 24px rgba(15, 23, 42, 0.08));
+  }
+
+  .phone-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .phone-svg rect, .phone-svg circle, .phone-svg path, .phone-svg text, .phone-svg line {
+    transition: fill 300ms ease, stroke 300ms ease, color 300ms ease;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .pip-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 6px;
+  }
+
+  .pip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--border);
+    transition: background 200ms ease, transform 200ms ease;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .pip-dot:hover { background: var(--muted); }
+  .pip-dot.active {
+    background: var(--accent);
+    transform: scale(1.25);
+  }
+
+  .pip-dot:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .pill-btn {
+    appearance: none;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+    font-family: inherit;
+  }
+
+  .pill-btn:hover {
+    background: var(--accent-bg);
+  }
+
+  .pill-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .pill-btn[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--surface);
+    border-color: var(--accent);
+  }
+
+  .pill-btn .glyph {
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  .progress {
+    height: 3px;
+    background: var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+    transition: background 300ms ease;
+  }
+
+  .progress-bar {
+    position: absolute;
+    inset: 0 100% 0 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent-deep));
+    transition: right 120ms linear;
+  }
+
+  .footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="stage" role="region" aria-label="MFA failure and recovery scenarios">
+
+  <div class="header">
+    <div class="header-title">
+      <span class="dot" aria-hidden="true"></span>
+      <span>CSI MFA &mdash; common failures and how to recover</span>
+    </div>
+    <div class="pip" id="pipText" aria-live="polite">Slide 1 of 5</div>
+  </div>
+
+  <div class="card" id="card">
+    <div class="pane pane-left" id="paneLeft" aria-label="Phone illustration"></div>
+    <div class="pane pane-right" id="paneRight" aria-label="Scenario explanation"></div>
+  </div>
+
+  <div class="footer">
+    <div class="progress" aria-hidden="true">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="controls">
+      <button class="pill-btn" id="prevBtn" type="button" aria-label="Previous slide">
+        <span class="glyph" aria-hidden="true">&#8592;</span>
+        <span>Previous</span>
+      </button>
+
+      <div class="pip-row" id="pipRow" role="tablist" aria-label="Jump to slide"></div>
+
+      <button class="pill-btn" id="pauseBtn" type="button" aria-pressed="false" aria-label="Pause autoplay">
+        <span class="glyph" id="pauseGlyph" aria-hidden="true">&#10073;&#10073;</span>
+        <span id="pauseLabel">Pause</span>
+      </button>
+
+      <button class="pill-btn" id="nextBtn" type="button" aria-label="Next slide">
+        <span>Next</span>
+        <span class="glyph" aria-hidden="true">&#8594;</span>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const SLIDES = [
+    {
+      kind: "success",
+      icon: "✓",
+      color: "var(--success)",
+      title: "Successful MFA login",
+      happened: "You set up your MFA factor, verified it immediately, and signed in with the correct one-time code.",
+      fix: "Nothing to fix — this is what we want to happen every time.",
+      phone: "success"
+    },
+    {
+      kind: "failure",
+      icon: "✕",
+      color: "var(--danger)",
+      title: "You picked 'Verify Later'",
+      happened: "During setup you tapped 'Verify Later' instead of confirming the factor right away.",
+      fix: "Open Account → Security → Multi-Factor and verify the factor now. Future logins will work.",
+      phone: "verify-later"
+    },
+    {
+      kind: "failure",
+      icon: "✕",
+      color: "var(--danger)",
+      title: "Factor was never verified",
+      happened: "You added an authenticator app but never completed verification, so the system doesn't trust it yet.",
+      fix: "Go back into Multi-Factor Settings, find the pending factor, and enter a current 6-digit code from your authenticator.",
+      phone: "pending"
+    },
+    {
+      kind: "failure",
+      icon: "✕",
+      color: "var(--warning)",
+      title: "Phone clock is out of sync",
+      happened: "Your phone's time drifted, so the one-time code is rejected as expired even when it looks correct.",
+      fix: "Turn on automatic time on your phone (Settings → General → Date & Time → Set automatically), then retry.",
+      phone: "clock"
+    },
+    {
+      kind: "failure",
+      icon: "✕",
+      color: "var(--danger)",
+      title: "Locked after three bad tries",
+      happened: "After three incomplete or wrong attempts in a row, ITS locks the account to prevent abuse.",
+      fix: "Open a ticket at hpchelp.csi.cuny.edu to request an unlock. Mention the lockout time so they can verify it was you.",
+      phone: "locked"
+    }
+  ];
+
+  const SLIDE_DURATION_MS = 6000;
+  const TICK_MS = 80;
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const paneLeft = document.getElementById("paneLeft");
+  const paneRight = document.getElementById("paneRight");
+  const pipText = document.getElementById("pipText");
+  const pipRow = document.getElementById("pipRow");
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const pauseBtn = document.getElementById("pauseBtn");
+  const pauseLabel = document.getElementById("pauseLabel");
+  const pauseGlyph = document.getElementById("pauseGlyph");
+  const progressBar = document.getElementById("progressBar");
+
+  let current = 0;
+  let isPaused = false;
+  let elapsed = 0;
+
+  // ---------- SVG helpers ----------
+  function svgEl(name, attrs) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", name);
+    if (attrs) for (const k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+
+  function addText(parent, text, x, y, size, fill, weight, anchor) {
+    const el = svgEl("text", {
+      x: x, y: y,
+      "font-family": "-apple-system, Inter, sans-serif",
+      "font-size": size, fill: fill, "font-weight": weight || "500"
+    });
+    if (anchor) el.setAttribute("text-anchor", anchor);
+    el.textContent = text;
+    parent.appendChild(el);
+    return el;
+  }
+
+  function addCenterLabel(parent, text, y, fill, size, weight) {
+    return addText(parent, text, 110, y, size, fill, weight, "middle");
+  }
+
+  function addCodeField(parent, value, color, bg, y) {
+    y = y || 320;
+    parent.appendChild(svgEl("rect", {
+      x: 40, y: y - 18, width: 140, height: 30, rx: 6, ry: 6,
+      fill: bg, stroke: color, "stroke-width": 1.5
+    }));
+    addText(parent, value, 110, y + 2, 14, color, "700", "middle");
+  }
+
+  function addPillLabel(parent, text, y, bg, fg, dashed) {
+    const w = 132;
+    const x = (220 - w) / 2;
+    const rect = svgEl("rect", {
+      x: x, y: y - 14, width: w, height: 26, rx: 13, ry: 13,
+      fill: bg
+    });
+    if (dashed) {
+      rect.setAttribute("stroke", fg);
+      rect.setAttribute("stroke-width", "1.5");
+      rect.setAttribute("stroke-dasharray", "4 3");
+    }
+    parent.appendChild(rect);
+    addText(parent, text, 110, y + 3, 10, fg, "700", "middle");
+  }
+
+  function buildPhone(variant) {
+    const wrap = document.createElement("div");
+    wrap.className = "phone-wrap";
+
+    const svg = svgEl("svg", {
+      class: "phone-svg",
+      viewBox: "0 0 220 440",
+      xmlns: "http://www.w3.org/2000/svg",
+      role: "img"
+    });
+
+    const titles = {
+      "success": "Phone showing a successful MFA verification",
+      "verify-later": "Phone showing the Verify Later option being tapped",
+      "pending": "Phone showing an unverified pending factor",
+      "clock": "Phone showing a clock that is out of sync",
+      "locked": "Phone showing the account locked screen"
+    };
+    const title = svgEl("title");
+    title.textContent = titles[variant] || "MFA scenario illustration";
+    svg.appendChild(title);
+
+    // Phone body
+    svg.appendChild(svgEl("rect", {
+      x: 6, y: 6, width: 208, height: 428, rx: 28, ry: 28,
+      fill: "var(--surface)", stroke: "var(--border)", "stroke-width": 2
+    }));
+    // Inner screen background
+    svg.appendChild(svgEl("rect", {
+      x: 14, y: 14, width: 192, height: 412, rx: 22, ry: 22,
+      fill: "var(--surface-2)"
+    }));
+    // Speaker
+    svg.appendChild(svgEl("rect", {
+      x: 92, y: 24, width: 36, height: 5, rx: 2.5, ry: 2.5, fill: "var(--border)"
+    }));
+    // Home indicator
+    svg.appendChild(svgEl("rect", {
+      x: 80, y: 414, width: 60, height: 4, rx: 2, ry: 2, fill: "var(--border)"
+    }));
+
+    const screen = svgEl("g");
+    svg.appendChild(screen);
+
+    // Status bar
+    const time = svgEl("text", {
+      x: 32, y: 56, "font-size": 10,
+      "font-family": "-apple-system, Inter, sans-serif",
+      fill: "var(--muted)", "font-weight": "600"
+    });
+    time.textContent = variant === "clock" ? "10:42" : "9:41";
+    screen.appendChild(time);
+
+    const battery = svgEl("text", {
+      x: 188, y: 56, "font-size": 10, "text-anchor": "end",
+      "font-family": "-apple-system, Inter, sans-serif",
+      fill: "var(--muted)", "font-weight": "600"
+    });
+    battery.textContent = "100%";
+    screen.appendChild(battery);
+
+    // App header
+    screen.appendChild(svgEl("rect", { x: 22, y: 70, width: 176, height: 1, fill: "var(--border)" }));
+    addText(screen, "CSI Account", 110, 88, 11, "var(--ink)", "700", "middle");
+    addText(screen, "Multi-Factor Authentication", 110, 102, 9, "var(--muted)", "500", "middle");
+    screen.appendChild(svgEl("rect", { x: 22, y: 112, width: 176, height: 1, fill: "var(--border)" }));
+
+    if (variant === "success") {
+      screen.appendChild(svgEl("circle", { cx: 110, cy: 200, r: 44, fill: "var(--success-bg)" }));
+      screen.appendChild(svgEl("circle", { cx: 110, cy: 200, r: 36, fill: "var(--success)" }));
+      screen.appendChild(svgEl("path", {
+        d: "M 92 200 L 105 213 L 130 188",
+        stroke: "var(--surface)", "stroke-width": 5, fill: "none",
+        "stroke-linecap": "round", "stroke-linejoin": "round"
+      }));
+      addCenterLabel(screen, "Verified", 270, "var(--ink)", 13, "700");
+      addCenterLabel(screen, "You're signed in.", 290, "var(--muted)", 10, "500");
+      addCodeField(screen, "428193", "var(--success)", "var(--success-bg)");
+      addPillLabel(screen, "Sign in", 380, "var(--success)", "var(--surface)");
+
+    } else if (variant === "verify-later") {
+      addCenterLabel(screen, "Add authenticator app?", 145, "var(--ink)", 12, "700");
+      addCenterLabel(screen, "We recommend verifying now.", 162, "var(--muted)", 9, "500");
+
+      // QR placeholder
+      screen.appendChild(svgEl("rect", {
+        x: 75, y: 178, width: 70, height: 70, rx: 6, ry: 6,
+        fill: "var(--surface)", stroke: "var(--border)", "stroke-width": 1
+      }));
+      for (let i = 0; i < 7; i++) {
+        for (let j = 0; j < 7; j++) {
+          if ((i * 3 + j * 5) % 3 === 0) {
+            screen.appendChild(svgEl("rect", {
+              x: 79 + i * 9, y: 182 + j * 9, width: 7, height: 7, fill: "var(--ink)"
+            }));
+          }
+        }
+      }
+
+      addPillLabel(screen, "Verify now", 280, "var(--border)", "var(--muted)");
+      addPillLabel(screen, "Verify later", 320, "var(--danger-bg)", "var(--danger)", true);
+
+      // Tap indicator on Verify Later
+      screen.appendChild(svgEl("circle", {
+        cx: 165, cy: 320, r: 14, fill: "none",
+        stroke: "var(--danger)", "stroke-width": 2, opacity: 0.85
+      }));
+      screen.appendChild(svgEl("circle", {
+        cx: 165, cy: 320, r: 22, fill: "none",
+        stroke: "var(--danger)", "stroke-width": 1.5, opacity: 0.4
+      }));
+
+      addCenterLabel(screen, "Factor not verified yet", 370, "var(--danger)", 9, "600");
+
+    } else if (variant === "pending") {
+      addCenterLabel(screen, "Your factors", 145, "var(--ink)", 12, "700");
+
+      // Verified row
+      screen.appendChild(svgEl("rect", {
+        x: 32, y: 165, width: 156, height: 46, rx: 8, ry: 8,
+        fill: "var(--surface)", stroke: "var(--border)", "stroke-width": 1
+      }));
+      screen.appendChild(svgEl("circle", { cx: 48, cy: 188, r: 8, fill: "var(--success)" }));
+      screen.appendChild(svgEl("path", {
+        d: "M 44 188 L 47 191 L 52 184",
+        stroke: "var(--surface)", "stroke-width": 1.6, fill: "none",
+        "stroke-linecap": "round", "stroke-linejoin": "round"
+      }));
+      addText(screen, "SMS Backup", 64, 184, 9, "var(--ink)", "600");
+      addText(screen, "Verified", 64, 198, 8, "var(--success)", "500");
+
+      // Pending row
+      screen.appendChild(svgEl("rect", {
+        x: 32, y: 220, width: 156, height: 46, rx: 8, ry: 8,
+        fill: "var(--warning-bg)", stroke: "var(--warning)", "stroke-width": 1.5
+      }));
+      screen.appendChild(svgEl("circle", { cx: 48, cy: 243, r: 8, fill: "var(--warning)" }));
+      addText(screen, "!", 48, 247, 11, "var(--surface)", "700", "middle");
+      addText(screen, "Authenticator app", 64, 239, 9, "var(--ink)", "600");
+      addText(screen, "Pending verification", 64, 253, 8, "var(--warning)", "600");
+
+      addPillLabel(screen, "Verify now", 295, "var(--accent)", "var(--surface)");
+      addCenterLabel(screen, "Enter the 6-digit code", 332, "var(--muted)", 9, "500");
+      addCodeField(screen, "• • • • • •", "var(--accent)", "var(--accent-bg)", 360);
+
+    } else if (variant === "clock") {
+      addCenterLabel(screen, "Enter your 6-digit code", 138, "var(--ink)", 11, "700");
+
+      const cx = 110, cy = 200, r = 38;
+      screen.appendChild(svgEl("circle", {
+        cx: cx, cy: cy, r: r, fill: "var(--warning-bg)", stroke: "var(--warning)", "stroke-width": 2
+      }));
+      addText(screen, "12", cx, cy - r + 12, 8, "var(--ink)", "700", "middle");
+      addText(screen, "3", cx + r - 8, cy + 3, 8, "var(--ink)", "700", "middle");
+      addText(screen, "6", cx, cy + r - 4, 8, "var(--ink)", "700", "middle");
+      addText(screen, "9", cx - r + 8, cy + 3, 8, "var(--ink)", "700", "middle");
+      // Hands offset (drifted)
+      screen.appendChild(svgEl("line", {
+        x1: cx, y1: cy, x2: cx + 14, y2: cy - 16,
+        stroke: "var(--ink)", "stroke-width": 2.5, "stroke-linecap": "round"
+      }));
+      screen.appendChild(svgEl("line", {
+        x1: cx, y1: cy, x2: cx + 22, y2: cy + 4,
+        stroke: "var(--danger)", "stroke-width": 1.8, "stroke-linecap": "round"
+      }));
+      screen.appendChild(svgEl("circle", { cx: cx, cy: cy, r: 2.5, fill: "var(--ink)" }));
+
+      addCenterLabel(screen, "Phone clock drifted", 258, "var(--warning)", 10, "700");
+      addCodeField(screen, "381 406", "var(--danger)", "var(--danger-bg)", 290);
+      addCenterLabel(screen, "Code rejected as expired", 320, "var(--danger)", 9, "600");
+      addPillLabel(screen, "Sync time & retry", 365, "var(--accent)", "var(--surface)");
+
+    } else if (variant === "locked") {
+      // Lock icon
+      screen.appendChild(svgEl("circle", { cx: 110, cy: 195, r: 44, fill: "var(--danger-bg)" }));
+      screen.appendChild(svgEl("path", {
+        d: "M 96 193 L 96 183 a 14 14 0 0 1 28 0 L 124 193",
+        fill: "none", stroke: "var(--danger)", "stroke-width": 4, "stroke-linecap": "round"
+      }));
+      screen.appendChild(svgEl("rect", {
+        x: 92, y: 193, width: 36, height: 26, rx: 4, ry: 4, fill: "var(--danger)"
+      }));
+      screen.appendChild(svgEl("circle", { cx: 110, cy: 204, r: 3, fill: "var(--surface)" }));
+      screen.appendChild(svgEl("rect", { x: 108.5, y: 204, width: 3, height: 7, fill: "var(--surface)" }));
+
+      addCenterLabel(screen, "Account locked", 263, "var(--ink)", 13, "700");
+      addCenterLabel(screen, "3 failed attempts in a row", 281, "var(--muted)", 10, "500");
+
+      // Three X marks
+      [82, 110, 138].forEach(function (x) {
+        screen.appendChild(svgEl("circle", {
+          cx: x, cy: 315, r: 11, fill: "var(--danger-bg)", stroke: "var(--danger)", "stroke-width": 1.5
+        }));
+        screen.appendChild(svgEl("path", {
+          d: "M " + (x - 4) + " 311 L " + (x + 4) + " 319 M " + (x + 4) + " 311 L " + (x - 4) + " 319",
+          stroke: "var(--danger)", "stroke-width": 2, "stroke-linecap": "round"
+        }));
+      });
+
+      addPillLabel(screen, "Contact help desk", 370, "var(--accent)", "var(--surface)");
+    }
+
+    wrap.appendChild(svg);
+    return wrap;
+  }
+
+  // ---------- Slide DOM construction ----------
+  function buildLeftSlide(slide) {
+    const div = document.createElement("div");
+    div.className = "slide slide-left";
+    div.setAttribute("role", "tabpanel");
+    div.appendChild(buildPhone(slide.phone));
+    return div;
+  }
+
+  function buildRightSlide(slide) {
+    const div = document.createElement("div");
+    div.className = "slide slide-right";
+
+    const iconRow = document.createElement("div");
+    iconRow.className = "icon-row";
+
+    const badge = document.createElement("span");
+    badge.className = "icon-badge";
+    badge.style.background = slide.color;
+    badge.setAttribute("aria-hidden", "true");
+    badge.textContent = slide.icon;
+    iconRow.appendChild(badge);
+
+    if (slide.kind === "failure") {
+      const arrow = document.createElement("span");
+      arrow.className = "icon-arrow";
+      arrow.setAttribute("aria-hidden", "true");
+      arrow.textContent = "→";
+      iconRow.appendChild(arrow);
+
+      const recover = document.createElement("span");
+      recover.className = "icon-recover";
+      recover.setAttribute("aria-hidden", "true");
+      recover.textContent = "↻";
+      iconRow.appendChild(recover);
+    }
+
+    const tag = document.createElement("span");
+    tag.className = "scenario-tag";
+    const swatch = document.createElement("span");
+    swatch.className = "swatch";
+    swatch.style.background = slide.color;
+    tag.appendChild(swatch);
+    const tagText = document.createElement("span");
+    tagText.textContent = slide.kind === "success" ? "Happy path" : "Failure & recovery";
+    tag.appendChild(tagText);
+    iconRow.appendChild(tag);
+
+    div.appendChild(iconRow);
+
+    const title = document.createElement("h2");
+    title.className = "slide-title";
+    title.textContent = slide.title;
+    div.appendChild(title);
+
+    const happenedSection = document.createElement("div");
+    happenedSection.className = "section";
+    const hLabel = document.createElement("div");
+    hLabel.className = "section-label";
+    hLabel.textContent = "What happened";
+    const hBody = document.createElement("p");
+    hBody.className = "section-body";
+    hBody.textContent = slide.happened;
+    happenedSection.appendChild(hLabel);
+    happenedSection.appendChild(hBody);
+    div.appendChild(happenedSection);
+
+    const fixSection = document.createElement("div");
+    fixSection.className = "section";
+    const fLabel = document.createElement("div");
+    fLabel.className = "section-label";
+    fLabel.textContent = "How to fix it";
+    const fBody = document.createElement("p");
+    fBody.className = "section-body";
+    fBody.textContent = slide.fix;
+    fixSection.appendChild(fLabel);
+    fixSection.appendChild(fBody);
+    div.appendChild(fixSection);
+
+    return div;
+  }
+
+  // Pre-render all slides
+  const leftSlides = [];
+  const rightSlides = [];
+  SLIDES.forEach(function (slide, i) {
+    const l = buildLeftSlide(slide);
+    const r = buildRightSlide(slide);
+    if (i === 0) {
+      l.classList.add("visible");
+      r.classList.add("visible");
+    }
+    leftSlides.push(l);
+    rightSlides.push(r);
+    paneLeft.appendChild(l);
+    paneRight.appendChild(r);
+  });
+
+  // Pip dots
+  SLIDES.forEach(function (_, i) {
+    const dot = document.createElement("button");
+    dot.className = "pip-dot";
+    dot.type = "button";
+    dot.setAttribute("role", "tab");
+    dot.setAttribute("aria-label", "Go to slide " + (i + 1));
+    if (i === 0) dot.classList.add("active");
+    dot.addEventListener("click", function () { goTo(i, true); });
+    pipRow.appendChild(dot);
+  });
+
+  function goTo(idx, fromUser) {
+    const next = ((idx % SLIDES.length) + SLIDES.length) % SLIDES.length;
+    if (next === current) return;
+
+    leftSlides[current].classList.remove("visible");
+    rightSlides[current].classList.remove("visible");
+    current = next;
+    leftSlides[current].classList.add("visible");
+    rightSlides[current].classList.add("visible");
+    pipText.textContent = "Slide " + (current + 1) + " of " + SLIDES.length;
+
+    const dots = pipRow.querySelectorAll(".pip-dot");
+    dots.forEach(function (d, i) {
+      if (i === current) d.classList.add("active");
+      else d.classList.remove("active");
+    });
+
+    elapsed = 0;
+    updateProgress();
+    if (fromUser) {
+      // restart cycle from this slide
+    }
+  }
+
+  function next() { goTo(current + 1, true); }
+  function prev() { goTo(current - 1, true); }
+
+  prevBtn.addEventListener("click", prev);
+  nextBtn.addEventListener("click", next);
+  pauseBtn.addEventListener("click", function () {
+    isPaused = !isPaused;
+    pauseBtn.setAttribute("aria-pressed", String(isPaused));
+    if (isPaused) {
+      pauseLabel.textContent = "Play";
+      pauseGlyph.innerHTML = "&#9654;";
+      pauseBtn.setAttribute("aria-label", "Resume autoplay");
+    } else {
+      pauseLabel.textContent = "Pause";
+      pauseGlyph.innerHTML = "&#10073;&#10073;";
+      pauseBtn.setAttribute("aria-label", "Pause autoplay");
+      elapsed = 0;
+      updateProgress();
+    }
+  });
+
+  function updateProgress() {
+    const pct = Math.min(100, (elapsed / SLIDE_DURATION_MS) * 100);
+    progressBar.style.right = (100 - pct) + "%";
+  }
+
+  function tick() {
+    if (isPaused) return;
+    elapsed += TICK_MS;
+    if (elapsed >= SLIDE_DURATION_MS) {
+      elapsed = 0;
+      goTo(current + 1, false);
+    } else {
+      updateProgress();
+    }
+  }
+
+  window.setInterval(tick, TICK_MS);
+  updateProgress();
+})();
+</script>
+</body>
+</html>

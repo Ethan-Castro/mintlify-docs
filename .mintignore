@@ -5,3 +5,6 @@
 # Draft content
 drafts/
 *.draft.mdx
+
+# Animation source code (only the rendered MP4s and HTML in images/ ship)
+animations/
