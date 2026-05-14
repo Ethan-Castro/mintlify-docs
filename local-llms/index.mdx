@@ -1,0 +1,324 @@
+---
+title: "Local LLMs workshop"
+description: "Run open-weight language models on your own laptop — no cloud, no API key, no WiFi. The companion page for the CSI HPCC Local LLMs workshop with Ethan Castro and Hussam Ali."
+---
+
+This is the companion page for the **Local LLMs** workshop run at the College of Staten Island. Everything you need to follow along is on the workshop USB stick. This page covers the same material the deck does, plus the step-by-step USB walkthrough so you can repeat the setup later.
+
+<Info>
+  By the end of the workshop you will have a chat app ([**AnythingLLM**](https://anythingllm.com/desktop)) talking to a model server ([**Ollama**](https://ollama.com/download)) running two open-weight models (**Gemma 4 E2B** and **Qwen 3.5 0.5B**) entirely on your own laptop — no internet required after setup.
+</Info>
+
+## Who is running this
+
+<CardGroup cols={2}>
+  <Card title="Ethan Castro" icon="user">
+    Learning Engineer at [Playlab.ai](https://playlab.ai) (employee #3). Full-time data science student at Baruch. Former neuro + bio research assistant at Brooklyn College and SUNY Downstate.
+  </Card>
+  <Card title="Hussam Ali" icon="user">
+    Full-time Electrical and Computer Engineering student at CSI. Former TSMC Process Engineering intern. Experiments across every layer of the AI stack.
+  </Card>
+</CardGroup>
+
+## Why this matters
+
+Six reasons we are running this workshop on this campus, in this room, in this decade.
+
+| Lever | Why it matters |
+| --- | --- |
+| **Empire AI** | $500M+ committed by New York State. CUNY is one of seven founding institutions. This is happening with or without us. |
+| **CUNY HPCC** | Literally in this building. Any CUNY undergrad doing research can request an account — it is also the on-ramp to Empire AI compute. |
+| **Career** | Applied AI engineer median total comp is $245K. ML infrastructure at staff level is $250-400K. |
+| **Data privacy** | Every regulated industry — banking, healthcare, law, education — is converging on the same conclusion: data can't leave the perimeter. |
+| **NYC** | The Bay Area treats AI like a regional industry. NYC has the talent, the schools, and the capital. |
+| **CUNY** | CUNY is the largest urban public university in the country. The next wave of AI builders should look like the city they come from. |
+
+## Cloud LLMs vs. local LLMs
+
+<CardGroup cols={2}>
+  <Card title="Cloud LLMs" icon="cloud">
+    AI models hosted on remote servers by providers like OpenAI, Anthropic, Google, and Microsoft. You send a prompt over the internet; their GPUs run the model; the answer comes back.
+
+    Examples: **ChatGPT, Claude, Gemini, Copilot**.
+
+    Hyperscalers (Meta, Microsoft, Google, AWS) are projected to spend **$700B+** on AI cloud infrastructure this year.
+  </Card>
+  <Card title="Local LLMs" icon="laptop">
+    AI models downloaded and executed directly on your own computer, laptop, or private server — no cloud round-trip.
+
+    Inference engines: **vLLM, SGLang, llama.cpp, Ollama, MLX, LM Studio**.
+
+    Open-weight model families: **Llama, Qwen, Gemma, DeepSeek, GLM, Kimi, Nemotron**.
+  </Card>
+</CardGroup>
+
+## Benefits of running models locally
+
+<AccordionGroup>
+  <Accordion title="Privacy — your data stays with you" icon="shield-halved">
+    Local models run directly on your personal device. Prompts, notes, code, research, prescriptions, PII, or confidential files do not need to be sent to a company's cloud server. The model never sees anything you don't hand it.
+  </Accordion>
+  <Accordion title="Offline access — AI without internet" icon="wifi-slash">
+    Once a model is downloaded, it works without WiFi. Useful in classrooms, labs, on a plane, in low-connectivity areas, and in secure environments where outbound traffic is restricted.
+  </Accordion>
+  <Accordion title="Lower long-term cost" icon="money-bill">
+    Instead of paying per prompt or for a subscription, you run the model on hardware you already own. That makes experimentation accessible to students and to small teams that can't expense API spend.
+  </Accordion>
+  <Accordion title="Environmental awareness" icon="leaf">
+    No cloud requests. No round-trips to a data center. Local LLMs use your laptop's existing power budget instead of remote facilities that need large amounts of electricity, cooling, and water.
+  </Accordion>
+  <Accordion title="Customization" icon="sliders">
+    You can tune the model's behavior, point it at your own notes or documents, and build specialized workflows for school, research, coding, or engineering projects.
+  </Accordion>
+</AccordionGroup>
+
+## Open source vs. closed source
+
+<CardGroup cols={2}>
+  <Card title="Open source / open weight" icon="lock-open">
+    - Model weights can be downloaded.
+    - Can run locally on your own device or server.
+    - More privacy and control.
+    - Community can test, fine-tune, and build on top of it.
+    - **Examples:** Llama, Qwen, DeepSeek, Gemma, Mistral.
+  </Card>
+  <Card title="Closed source / proprietary" icon="lock">
+    - Accessed through an app or API only.
+    - Weights are not public.
+    - Easier to use; less control.
+    - Data handling and cost depend on the provider.
+    - **Examples:** ChatGPT, Claude, Gemini.
+  </Card>
+</CardGroup>
+
+## Big models vs. small models
+
+<CardGroup cols={2}>
+  <Card title="Large (30B – 2T+ parameters)" icon="warehouse">
+    - Better general reasoning.
+    - Handles more complex tasks.
+    - Usually needs cloud GPUs or big servers.
+    - More expensive to run.
+    - **Good for:** coding, research, planning, agents.
+  </Card>
+  <Card title="Small (under 20B parameters)" icon="microchip">
+    - Faster and cheaper to run.
+    - Runs on laptops, phones, or modest local servers.
+    - Better when focused on one task.
+    - Easier to customize or fine-tune.
+    - **Good for:** tutoring, classification, privacy-sensitive tasks, simple assistants.
+  </Card>
+</CardGroup>
+
+## The current landscape
+
+Two snapshots from [Artificial Analysis](https://artificialanalysis.ai) Intelligence Index v4.0:
+
+- **Leading models by country.** The current frontier is split between the United States (Anthropic, OpenAI, Google, Meta) and China (Kimi, MiMo, Qwen, DeepSeek, GLM, MiniMax), with single entries from France (Muse Spark), South Korea, and the UAE.
+- **Open weights vs. proprietary.** Many of the frontier-quality models scoring in the 50-57 range are now **open weight** — Kimi K2.6, MiMo, Qwen 3.6, DeepSeek V4 Pro, GLM 5.1, MiniMax M2.7. The cost-of-entry to a strong local model has dropped dramatically.
+
+The Artificial Analysis Intelligence Index v4.0 combines 10 benchmarks: GDPval-AA, τ²-Bench Telecom, Terminal-Bench Hard, SciCode, AA-LCR, AA-Omniscience, IFBench, Humanity's Last Exam, GPQA Diamond, and CritPt.
+
+## Step-by-step setup
+
+You need two free desktop apps and two open-weight models. Follow these five steps in order. If you're at the workshop, the USB has everything preloaded — see the [USB shortcut](#workshop-day-usb-shortcut) below.
+
+<Steps>
+  <Step title="Download and install Ollama">
+    Open [**ollama.com/download**](https://ollama.com/download) and grab the installer for your OS (Mac, Windows, or Linux). Run it.
+
+    Ollama is the local model server — it runs in the background and exposes a local API that other apps can talk to. After install, you should see the Ollama icon in your menu bar (Mac) or system tray (Windows).
+  </Step>
+  <Step title="Download and install AnythingLLM">
+    Open [**anythingllm.com/desktop**](https://anythingllm.com/desktop) and grab the desktop app for your OS. Run the installer.
+
+    AnythingLLM is the chat front-end — the part that looks like ChatGPT but talks to your local Ollama instead of OpenAI.
+  </Step>
+  <Step title="Pull the two workshop models">
+    Open a terminal (macOS: **Terminal.app**; Windows: **PowerShell** or **Command Prompt**) and run:
+
+    ```bash
+    ollama pull gemma4:e2b
+    ollama pull qwen3.5:0.8b
+    ```
+
+    `gemma4:e2b` is the main workshop model. `qwen3.5:0.8b` is the smaller alternate. Both will download from [ollama.com/library](https://ollama.com/library) in the background — total around 4-5 GB.
+  </Step>
+  <Step title="Open AnythingLLM and connect to Ollama">
+    Launch **AnythingLLM**. In the onboarding screens:
+
+    - **LLM provider:** Ollama
+    - **Model:** `gemma4:e2b`
+    - Click through the remaining onboarding screens (workspace name, telemetry choice, etc.).
+  </Step>
+  <Step title="Start chatting">
+    You're now running an AI model entirely on your own laptop. No cloud, no API key, no internet required after this point.
+
+    To swap models later, open AnythingLLM's settings → **LLM Preference** → pick `qwen3.5:0.8b`. It only loads into memory when selected.
+  </Step>
+</Steps>
+
+<Tip>
+  **Want to skip Ollama's CLI?** AnythingLLM can pull models for you. Once Ollama is installed, AnythingLLM will detect it and let you pull `gemma4:e2b` from inside its UI.
+</Tip>
+
+## Workshop-day USB shortcut
+
+If you're in the room with us, you don't need to download anything — the USB stick has all of the above preloaded. Just plug it in and run one file:
+
+<Tabs>
+  <Tab title="macOS">
+    <Steps>
+      <Step title="Open the USB and run START-MAC.command">
+        Double-click `START-MAC.command`.
+
+        If macOS blocks it: right-click → **Open** → confirm **Open** in the dialog.
+      </Step>
+      <Step title="Install AnythingLLM and Ollama">
+        Installers from `installers/` will open. Drag each app icon into **Applications**.
+
+        Switch back to the Terminal window and press **Enter** between installs.
+      </Step>
+      <Step title="Wait for the model to extract">
+        The launcher extracts `models.tar` into Ollama's model store. AnythingLLM launches automatically when it's done.
+      </Step>
+      <Step title="Configure AnythingLLM">
+        - **LLM provider:** Ollama
+        - **Model:** `gemma4:e2b`
+        - Click through the remaining onboarding screens.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Windows">
+    <Steps>
+      <Step title="Open the USB and run START-WINDOWS.bat">
+        Double-click `START-WINDOWS.bat`.
+
+        If SmartScreen blocks it: click **More info** → **Run anyway**.
+      </Step>
+      <Step title="Click through each installer">
+        Installers from `installers/` will appear for AnythingLLM and Ollama. Accept the defaults.
+      </Step>
+      <Step title="Wait for the model to extract">
+        The launcher extracts `models.tar` into Ollama's model store. AnythingLLM launches automatically when it's done.
+      </Step>
+      <Step title="Configure AnythingLLM">
+        - **LLM provider:** Ollama
+        - **Model:** `gemma4:e2b`
+        - Click through the remaining onboarding screens.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+### What is on the USB
+
+| File / folder | What it does |
+| --- | --- |
+| `0-START-HERE.txt` | Plain-English fallback instructions. Open this first if anything is unclear. |
+| `START-MAC.command` | One file Mac users double-click — opens installers, extracts models, starts Ollama, launches AnythingLLM. |
+| `START-WINDOWS.bat` | One file Windows users double-click — runs the PowerShell setup with the right execution policy. |
+| `installers/` | Offline installers for AnythingLLM ([anythingllm.com/desktop](https://anythingllm.com/desktop)) and Ollama ([ollama.com/download](https://ollama.com/download)) so the room doesn't fight WiFi. |
+| `models.tar` | Preloaded Ollama model store — `gemma4:e2b` and `qwen3.5:0.8b` so you don't pull from the internet. |
+| `References to Search Through/` | Markdown files for the agent to search — gives you something real to investigate immediately. |
+| `WORKSHOP-GUIDE.html` | The visual overview of everything on the stick. Open in any browser. |
+
+## Models on the USB
+
+<CardGroup cols={2}>
+  <Card title="gemma4:e2b" icon="star">
+    The **main** workshop model. Better answers, multimodal demos, agent tasks.
+
+    - Quantization: Q4_K_M
+    - Loaded into RAM on demand
+    - The default choice for all workshop activities
+  </Card>
+  <Card title="qwen3.5:0.8b" icon="bolt">
+    The **smaller alternate** model. Useful for showing speed-vs-quality tradeoffs.
+
+    - 0.8B parameters — runs comfortably on modest laptops
+    - Loaded only when selected
+    - Try it after you've used Gemma so the difference is obvious
+  </Card>
+</CardGroup>
+
+## The agent activity — search local files
+
+The headline hands-on moment of the workshop. Instead of explaining vector databases first, you point the agent at a folder and watch it search.
+
+<Steps>
+  <Step title="Open AnythingLLM with Gemma loaded">
+    From the setup steps above. Ollama running in the background, Gemma selected as the model.
+  </Step>
+  <Step title="Open the prompt sheet">
+    `References to Search Through/FILE-SEARCH-AGENT-PROMPTS.md` — this has copy-paste prompts you can run.
+  </Step>
+  <Step title="Point the agent at the references folder">
+    Replace `PATH_TO_THIS_FOLDER` with the actual path on your machine, then send:
+
+    ```
+    @agent Search PATH_TO_THIS_FOLDER for Gemma 4 and qwen3.5. Read the most
+    relevant files and compare the two models for this workshop.
+    ```
+  </Step>
+  <Step title="Ask for an output">
+    The agent can summarize, compare, cite filenames, and create new files from what it found. Try:
+
+    - *"Write a one-page summary of how Empire AI access works."*
+    - *"List the SLURM commands mentioned in the HPCC docs."*
+    - *"Compare Gemma 4 E2B and Qwen 3.5 0.8B head to head."*
+  </Step>
+</Steps>
+
+### What's in the references folder
+
+<CardGroup cols={3}>
+  <Card title="HPCC questions" icon="server">
+    Ask about CUNY HPCC accounts, SLURM, modules, storage, job submission, and first steps on the cluster.
+  </Card>
+  <Card title="Empire AI questions" icon="building-columns">
+    Search Empire AI material for governance, research areas, active projects, and mission context.
+  </Card>
+  <Card title="Model questions" icon="brain">
+    Compare Gemma, Qwen, and other small open-source models using the bundled benchmark references.
+  </Card>
+</CardGroup>
+
+## Live demo tasks
+
+Two prompts we run live with the audience to show off multimodal behavior on a tiny local model:
+
+<CardGroup cols={2}>
+  <Card title="Task 1" icon="image">
+    *"Show me a photo of the College of Staten Island."*
+
+    Demonstrates how a multimodal local model handles a request for visual content it doesn't have, and how it explains its own limits.
+  </Card>
+  <Card title="Task 2" icon="user">
+    *"Show me a photo of one of the workshop hosts."*
+
+    Same exercise with a person — pushes on whether the model has the relevant identity in its training data, and reinforces that local models aren't omniscient.
+  </Card>
+</CardGroup>
+
+## Compatibility
+
+| Device | Status | Note |
+| --- | --- | --- |
+| **Apple Silicon Mac** (M1+) | Ready | Uses the bundled Apple Silicon AnythingLLM and Ollama installers. |
+| **Windows 10 / 11 x64** | Ready | Uses the bundled Windows installers and setup script. |
+| **Intel Mac** | Partial | AnythingLLM Intel build is on the stick. The current Ollama DMG is Apple Silicon only, so Intel Mac users may need Ollama already installed. |
+| **All devices** | Disk space | Use an exFAT-formatted USB, and leave at least **12-15 GB** free on the laptop for model extraction. |
+
+## After the workshop
+
+If you keep using local models, the natural next steps are:
+
+- **Run a larger model** if your laptop has the RAM. Try `gemma3:12b` or `qwen3:14b` from `ollama pull`.
+- **Move to a real GPU** via the [CSI HPCC](/index) or, for bigger work, [Empire AI](/empire-ai/index).
+- **Wire local models into your IDE** — Continue, Cursor, and Aider all support an Ollama endpoint.
+- **Read the open-weight model cards** on [Hugging Face](https://huggingface.co/) before downloading new models — licenses vary widely.
+
+<Note>
+  Local LLMs are part of a broader open-source ecosystem. Inference engines, model creators, fine-tuners, and tooling teams all contribute — the workshop is a starting point, not the destination.
+</Note>
