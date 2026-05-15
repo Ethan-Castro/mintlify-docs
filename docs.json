@@ -1,18 +1,34 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "luma",
-  "name": "CSI HPCC Documentation",
-  "description": "Documentation and educational guide for the College of Staten Island High Performance Computing Center (CSI HPCC): clusters, SLURM, storage, tutorials, policies, and support.",
+  "name": "CUNY HPCC Documentation",
+  "description": "Documentation and educational guide for the College of Staten Island High Performance Computing Center (CUNY HPCC): clusters, SLURM, storage, tutorials, policies, and support.",
   "colors": {
-    "primary": "#7abde8",
-    "light": "#7abde8",
-    "dark": "#7abde8"
+    "primary": "#0033A1",
+    "light": "#F7F4EB",
+    "dark": "#0033A1"
   },
-  "favicon": "/images/hardware/images (10).png",
+  "background": {
+    "color": {
+      "light": "#FFFFFF",
+      "dark": "#011D49"
+    }
+  },
+  "fonts": {
+    "heading": {
+      "family": "Libre Franklin",
+      "weight": 700
+    },
+    "body": {
+      "family": "Libre Franklin",
+      "weight": 400
+    }
+  },
+  "favicon": "/logo/cuny-blue.jpg",
   "navigation": {
     "tabs": [
       {
-        "tab": "CSI HPCC",
+        "tab": "CUNY HPCC",
         "groups": [
           {
             "group": "Getting started",
@@ -131,8 +147,8 @@
     }
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/cuny-blue.jpg",
+    "dark": "/logo/cuny-white.png"
   },
   "navbar": {
     "links": [

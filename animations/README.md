@@ -1,6 +1,6 @@
 # Animations
 
-Source files for the concept-explainer animations embedded in the CSI HPCC docs site.
+Source files for the concept-explainer animations embedded in the CUNY HPCC docs site.
 
 ## Layout
 

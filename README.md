@@ -1,6 +1,6 @@
-# CSI HPCC documentation
+# CUNY HPCC documentation
 
-This repository contains the Mintlify documentation site for the College of Staten Island High Performance Computing Center (CSI HPCC), including account access, storage, SLURM job submission, support, and Empire AI guidance.
+This repository contains the Mintlify documentation site for the College of Staten Island High Performance Computing Center (CUNY HPCC), including account access, storage, SLURM job submission, support, and Empire AI guidance.
 
 ## AI-assisted writing
 

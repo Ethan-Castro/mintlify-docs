@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-This is a Mintlify documentation site being built out as the documentation and educational site for the **College of Staten Island (CSI) High Performance Computing Center (HPCC)**. Audience: CSI HPCC researchers, students, and staff.
+This is a Mintlify documentation site being built out as the documentation and educational site for the **College of Staten Island (CSI) High Performance Computing Center (HPCC)**. Audience: CUNY HPCC researchers, students, and staff.
 
-The repo has been converted from the Mintlify starter into CSI HPCC documentation. The public navigation in [docs.json](docs.json) points to HPCC, Empire AI, and support pages. Some legacy Mintlify starter examples remain under [essentials/](essentials/) and [api-reference/](api-reference/); treat those as unpublished examples unless they are explicitly added to navigation.
+The repo has been converted from the Mintlify starter into CUNY HPCC documentation. The public navigation in [docs.json](docs.json) points to HPCC, Empire AI, and support pages. Some legacy Mintlify starter examples remain under [essentials/](essentials/) and [api-reference/](api-reference/); treat those as unpublished examples unless they are explicitly added to navigation.
 
 Content is authored as MDX files with YAML frontmatter; site configuration (theme, navigation, navbar, footer) lives in [docs.json](docs.json). There is no build step or package.json; Mintlify consumes the MDX + `docs.json` directly via its CLI/hosted renderer.
 
